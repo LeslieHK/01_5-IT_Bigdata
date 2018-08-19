@@ -1,0 +1,49 @@
+配置：
+如果kafaka启动时加载的配置文件中server.properties没有配置"delete.topic.enable=true"，那么此时的删除并不是真正的删除，而是把topic标记为删除：marked for deletion
+
+
+
+启动
+kafka-server-start.sh -daemon ./config/server.properties
+
+
+topic
+
+参数：
+--zookeeper master:2181,slave1:2181,slave2:2181
+--topic genji_007
+--partitions 2
+--replication-factor 2
+
+--if-exists
+--if-not-exists
+
+1、删除topic
+kafka-topics.sh --delete --if-exists --topic genji-007 --zookeeper master:2181,slave1:2181,slave2:2181
+
+2、创建
+kafka-topics.sh --create --topic genji-007 --partitions 2 --replication-factor 2 --zookeeper master:2181,slave1:2181,slave2:2181 
+
+3、查看
+kafka-topics.sh --list --zookeeper master:2181,slave1:2181,slave2:2181
+kafka-topics.sh --describe --zookeeper master:2181,slave1:2181,slave2:2181 --topic genji-007
+
+
+
+
+发送、接收消息
+
+参数：
+
+--broker-list master:9090,slave1:9091,slave2:9092
+--zookeeper master:2181,slave1:2181,slave2:2181
+--topic genji_007
+
+1、发送消息
+kafka-console-producer.sh --broker-list master:9090,slave1:9091,slave2:9092 --topic genji-007
+
+2、接收消息
+kafka-console-consumer.sh --zookeeper master:2181,slave1:2181,slave2:2181 --topic genji-007
+
+
+

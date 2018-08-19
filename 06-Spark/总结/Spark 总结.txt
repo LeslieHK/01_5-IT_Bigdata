@@ -1,0 +1,220 @@
+1、BDAY：伯克利数据分析栈
+2、内存并行计算框架
+3、组成：Spark Core、Spark Streaming、Spark SQL、MLLib、GraphX
+4、支持语言：Scala（推荐）、Python、Java
+5、DAG执行引擎
+6、Spark速度是Hadoop MapReduce的100多倍
+7、弹性分布式数据集RDD：Resilient Distributed Dataset，容错性高
+8、Spark SQL允许开发人员直接处理RDD。
+9、术语：
+		Application、Driver Program(SparkContext)、Executor、
+		Cluster Manager、Operation(Transformation、Action)
+10、四种算子：
+		输入算子：parallelize、txtFile
+		转换算子：转换成DAG(有向无环图：Directed Acycle graph)，不立即执行
+		缓存算子：
+		行动算子：count、reduce、collect、saveAsTextFile
+11、转换与操作
+		Transformations是延迟的,等到Actions操作时才执行。
+		Actions是触发Spark启动计算的动因。
+12、转换：
+		reduce(func)	通过函数func聚集数据集中的所有元素
+		collect()			通常会在使用filter或者其它操作后，返回一个足够小的数据子集再使用，直接将整个RDD集Collect返回，很可能会让Driver程序OOM
+		count()
+		take(n)
+		first()
+		saveAsTextFile(path)
+		saveAsSequenceFile(path)
+		foreach(func)	在数据集的每一个元素上，运行函数func。这通常用于更新一个累加器变量，或者和外部存储系统做交互
+13、操作：
+		map(func)
+		filter(func)
+		flatMap(func)
+		union(otherDataset)
+		groupByKey([numTasks])
+		reduceByKey(func, [numTasks])
+		join(otherDataset, [numTasks])
+		groupWith(otherDataset, [numTasks])
+14、RDD 中将依赖划分成了两种类型：窄依赖 (Narrow Dependencies) 和宽依赖 (WideDependencies) 。窄
+15、Spark可以使用 persist 和 cache 方法将任意 RDD 缓存到内存、磁盘文件系统中。缓存是容错的，如果一个 RDD 分片丢失，可以通过构建它的 transformation自动重构。
+16、步骤：
+		启动hdfs(start-dfs.sh) -> 启动spark(start-all.sh) -> 启动脚本(spark-shell)
+17、hadoop离开安全模式：
+		hadoop dfsadmin -report
+		
+18、Spark UI地址：master:4040/
+19、sbt/sbt assembly -Pyarn -Phadoop-2.4 -Pspark-ganglia-lgpl -Pkinesis-asl -Phive 
+20、spark-shell必须开着，才能访问：master:4040
+21、spark用1.x的版本
+
+
+20170714
+1、启动：Spark
+   spark-shell --master spark://master:7077 --executor-memory 400m
+2、创建RDD
+   spark使用parallelize方法创建RDD（parallel：并行）
+
+
+20170716
+1、RDD中的数据是分区存储的，这样不同分区的数据就可以分布在不同的机器上，同时可以被并行处理
+
+2、如何创建RDD？
+  RDD可以从普通数组创建出来，也可以从文件系统或者HDFS中的文件创建出来。
+
+    举例：从普通数组创建RDD，里面包含了1到9这9个数字，它们分别在3个分区中。
+      scala> val a = sc.parallelize(1 to 9, 3)
+      a: org.apache.spark.rdd.RDD[Int] = ParallelCollectionRDD[1] at parallelize at <console>:12
+
+    举例：读取文件README.md来创建RDD，文件中的每一行就是RDD中的一个元素
+
+      scala> val b = sc.textFile("README.md")
+      b: org.apache.spark.rdd.RDD[String] = MappedRDD[3] at textFile at <console>:12
+      
+3、reduce
+  reduce将RDD中元素两两传递给输入函数，同时产生一个新的值，新产生的值与RDD中下一个元素再被传递给输入函数直到最后只有一个值为止。
+
+    举例
+
+      scala> val c = sc.parallelize(1 to 10)
+      scala> c.reduce((x, y) => x + y)
+      res4: Int = 55
+
+4、RDD类型 
+  ParalleCollectionRDD
+  MappedRDD
+  FilteredRDD
+  
+5、构建RDD
+  第一类方式从内存里构造RDD，使用的方法：makeRDD和parallelize方法
+  
+  
+  
+parallelize
+mkRDD
+
+textFile
+
+map
+filter
+flatMap
+
+reduce
+collect
+take(0)
+count
+first
+saveAsTextFile
+
+toDebugString
+mkString
+
+总结：
+
+  Spark 中 map函数会对每一条输入进行指定的操作，然后为每一条输入返回一个对象；
+  而flatMap函数则是两个操作的集合——正是“先映射后扁平化”：
+    操作1：同map函数一样：对每一条输入进行指定的操作，然后为每一条输入返回一个对象
+    操作2：最后将所有对象合并为一个对象
+       
+  在sparkContext类中的textFile()方法读取HDFS文件后，使用了map()生成了MappedRDD。
+  
+  
+  val rdd2 = sc.textFile("hdfs://master:9000/sougou/SogouQ.mini") 
+  rdd2.flatMap(_.split(" ")).map(x=>(x,1)).reduceByKey(_+_).collect
+  
+  bin/spark-submit --master spark://master:7077 --class org.apache.spark.test.SparkPi --executor-memory 1g SparkDemo.jar
+    
+    
+    
+    
+    
+****************************************************************************************************************
+
+
+
+
+RDD：只读、可分区的分布式数据集，这个数据集的全部或部分可以缓存在内存中，在多次计算间重用。
+当前RDD默认是存储于内存，但当内存不足时，RDD会溢出到磁盘中。
+
+Narrow deps：窄依耐，指父RDD的每一个分区最多被一个子RDD的分区所用。
+wide deps：宽依耐，指子RDD的分区依赖于父RDD的所有分区。
+
+窄依赖对优化很有利：
+逻辑上，每个RDD的算子都是一个fork/join（此join非上文的join算子，而是指同步多个并行任务的barrier）：
+把计算fork到每个分区，算完后join，然后fork/join下一个RDD的算子。
+如果直接翻译到物理实现，是很不经济的：一是每一个RDD（即使是中间结果）都需要物化到内存或存储中，费时费空间；
+二是join作为全局的barrier，是很昂贵的，会被最慢的那个节点拖死。
+如果子RDD的分区到父RDD的分区是窄依赖，就可以实施经典的fusion优化，把两个fork/join合为一个；
+如果连续的变换算子序列都是窄依赖，就可以把很多个fork/join并为一个，不但减少了大量的全局barrier，
+而且无需物化很多中间结果RDD，这将极大地提升性能。Spark把这个叫做流水线（pipeline）优化。
+
+Transformation操作是Lazy的，即从一个RDD转换生成另一个RDD的操作不是马上执行，
+Spark在遇到Transformations操作时只会记录需要这样的操作，并不会去执行，
+需要等到有Actions操作的时候才会真正启动计算过程进行计算。Actions操作会返回结果或把RDD数据写到存储系统中。
+Actions是触发Spark启动计算的动因。
+
+
+scala> var data = sc.parallelize(List(1,2,3,4))  
+data: org.apache.spark.rdd.RDD[Int] = 
+　　ParallelCollectionRDD[44] at parallelize at <console>:12 
+   
+scala> data.getStorageLevel  
+res65: org.apache.spark.storage.StorageLevel =  
+　　StorageLevel(false, false, false, false, 1)  
+   
+scala> data.cache  
+res66: org.apache.spark.rdd.RDD[Int] =  
+　　ParallelCollectionRDD[44] at parallelize at <console>:12 
+   
+scala> data.getStorageLevel  
+res67: org.apache.spark.storage.StorageLevel =  
+　　StorageLevel(false, true, false, true, 1)
+
+
+DataFrame
+DataFrame是一个由多个列组成的结构化的分布式数据集合，等同于关系数据库中的一张表，
+或者是R/Python中的Data Frame。DataFrame是Spark SQL中的最基本的概念，可以通过多种方式创建，
+例如结构化的数据集、Hive表、外部数据库或者是RDD。
+
+Spark SQL的程序入口是SQLContext类（或其子类），创建SQLContext时需要一个SparkContext对象作为其构造参数。
+SQLContext其中一个子类是HiveContext，相较于其父类，HiveContext添加了HiveQL的parser、UDF以及读取存量Hive数据的功能等。
+但注意，HiveContext并不依赖运行时的Hive，只是依赖Hive的类库。
+由SQLContext及其子类可以方便的创建SparkSQL中的基本数据集DataFrame，DataFrame向上提供多种多样的编程接口，
+向下兼容多种不同的数据源，比如Parquet、JSON、Hive数据、Database、HBase等等，这些数据源都可以使用统一的语法来读取。
+
+Dstream
+DStream(又称Discretized Stream)是Spark Streaming提供的抽象概念。
+DStream表示一个连续的数据流，是从数据源获取或者通过输入流转换生成的数据流。
+从本质上说，一个DStream表示一系列连续的RDD。RDD是一个只读的、可分区的分布式数据集。
+
+//读取数据。其是传入参数args(0)指定数据路径
+val text = sc.textFile(args(0))
+//筛选女性网民上网时间数据信息
+val data = text.filter(_.contains("female"))
+//汇总每个女性上网时间
+val femaleData:RDD[(String,Int)] = data.map{line =>
+    val t= line.split(',')
+    (t(0),t(2).toInt)
+}.reduceByKey(_ + _)
+//筛选出时间大于两个小时的女性网民信息，并输出
+val result = femaleData.filter(line => line._2 > 120)
+result.collect().map(x => x._1 + ',' + x._2).foreach(println)
+sc.stop()
+
+
+获取元组和数组的方法
+("a", 1)._1
+Array("a", "b", "c")(1)
+
+启动hive metastore
+nohup ./hive --service metastore >> metastore.log 2>&1 &
+
+
+
+
+
+
+  
+  
+
+
+

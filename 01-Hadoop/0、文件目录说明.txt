@@ -1,0 +1,13 @@
+【文件目录说明】
+
+1~7	为Hadoop分布式安装
+
+
+1.CentOS系统部署Hadoop集群.docx
+
+  建议双击./hadoop 2.5.2 doc/index.html按里面的官方文档一步步安装，该文档只做为参考
+
+
+2.配置SecondaryNameNode.docx
+ 
+  不需要配置snn，配置HA就不需要snn了

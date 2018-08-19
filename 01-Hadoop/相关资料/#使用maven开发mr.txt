@@ -1,0 +1,70 @@
+1.安装mvn(可以省略)
+	1.1上传安装包到linux
+	
+	1.2解压maven安装包
+		mkdir /usr/maven
+		tar -zxvf apache-maven-3.2.1-bin.tar.gz -C /usr/maven
+	1.3添加maven到环境变量
+		vim /etc/profile
+		export JAVA_HOME=/usr/java/jdk1.7.0_55
+		export MAVEN_HOME=/usr/maven/apache-maven-3.2.1
+		export HADOOP_HOME=/cloud/hadoop-2.4.1
+		export PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$MAVEN_HOME/bin:.
+
+2.将m2.tar.gz解压到当前用户的家目录下
+	tar -zxvf m2.tar.gz -C ~/ 
+		
+3.在Eclipse下新建maven project，如果出错，在当前项目的pom.xml中添加如下内容，刷新即可（需要有网络）
+<dependencies>
+	<dependency>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-resources-plugin</artifactId>
+      <version>2.4.3</version>
+	</dependency>
+</dependencies>
+
+
+4.编写hadoop程序
+	hdfs程序需要引入依赖：
+	<dependencies>
+		<dependency>
+		  <groupId>junit</groupId>
+		  <artifactId>junit</artifactId>
+		  <version>4.8.2</version>
+		  <scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-common</artifactId>
+			<version>2.4.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-hdfs</artifactId>
+			<version>2.4.1</version>
+		</dependency>
+	</dependencies>
+
+	mr程序需要引入依赖：
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.2</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-common</artifactId>
+			<version>2.4.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-mapreduce-client-core</artifactId>
+			<version>2.4.1</version>
+		</dependency>
+	</dependencies>

@@ -1,0 +1,27 @@
+1、hbase shell
+2、help
+3、quit/exit
+4、在使用表名或列名时必须通过单引号或双引号对其进行引用
+5、参数之间需要使用逗号进行分隔
+6、键值对需要被包括在花括号中，键/值之间使用"=>"分隔。使用键/值模式赋值的属性通常是NAME、VERSION，并且不需要使用引号
+
+普通命令
+7、status
+8、version
+
+DDL
+9、alter
+10、create
+	create 'user_info', 'name', 'age'
+	create 'user_info', {NAME => 'name', VERSION => 1}
+	create 'user_info', {NAME => 'name'}, {NAME => 'age'}
+	create 'user_info', {NAME => 'name', VERSION => 1}, {NAME => 'age', VERSION => 1} 错误
+
+11、describe
+12、disable
+13、drop
+14、enable
+15、exits
+16、is_disabled
+17、is_enabled
+18、list

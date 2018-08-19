@@ -1,0 +1,15 @@
+1¡¢Configuration conf = HBaseConfiguration.create();
+
+2¡¢Bytes.toBytes("table_name");
+
+3¡¢HTable t = new HTable(conf, Bytes.toBytes("test_temp1"));
+
+4¡¢t.setAutoFlush(false);//¿ªÆô×Ô¶¯»º´æ
+
+5¡¢Put put = new Put(Bytes.toBytes("001"));
+
+6¡¢put.add(Bytes.toBytes("fam1"), Bytes.toBytes("rol1"), Bytes.toBytes("val1"));
+
+7¡¢t.put(put);
+
+8¡¢t.flushCommits();

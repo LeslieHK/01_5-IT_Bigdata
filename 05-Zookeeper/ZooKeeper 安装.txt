@@ -1,0 +1,130 @@
+1.上传zk安装包：zookeeper-3.4.5.tar.gz
+  [hadoop@master ~]$ cd /tmp/pkg/
+  [hadoop@master pkg]$ rz
+	
+2.解压
+  [hadoop@master pkg]$ tar -zxvf zookeeper-3.4.5.tar.gz -C /opt/bigdata/
+  [hadoop@master pkg]$ cd /opt/bigdata/
+  [hadoop@master bigdata]$ mv zookeeper-3.4.5/ zookeeper
+
+3.配置
+	3.1.添加一个zoo.cfg配置文件
+	  [hadoop@master bigdata]$ cd zookeeper/conf/
+	  [hadoop@master conf]$ mv zoo_sample.cfg zoo.cfg
+	
+	3.2.修改配置文件（zoo.cfg）
+		修改：
+		dataDir=/data/zookeeper
+		添加：
+		server.1=master:2888:3888
+		server.2=slave1:2888:3888
+		server.3=slave2:2888:3888
+		
+		添加存储路径：
+		[hadoop@master conf]$ cd /data/
+		[hadoop@master data]$ mkdir zookeeper
+	
+	3.3.在（dataDir=/data/zookeeper）创建一个myid文件，里面内容是server.N中的N（server.2里面内容为2）
+	  [hadoop@master conf]$ cd /data/zookeeper/
+	  [hadoop@master zookeeper]$ touch myid
+    [hadoop@master zookeeper]$ echo '1' > myid 
+	
+4.发布到集群
+	4.1.将配置好的zk拷贝到其他节点
+	  [hadoop@master bigdata]$ scp -r /opt/bigdata/zookeeper/ hadoop@slave1:/opt/bigdata/
+	  [hadoop@master bigdata]$ scp -r /opt/bigdata/zookeeper/ hadoop@slave2:/opt/bigdata/
+	
+	4.2.在其他节点添加存储路径：
+		[hadoop@slave1 ~]$ cd /data/
+		[hadoop@slave1 data]$ sudo mkdir zookeeper
+		[hadoop@slave1 data]$ sudo chown hadoop:hadoop zookeeper/
+		...
+		slave2同上
+	
+	4.3.在其他节点创建一个myid文件
+		[hadoop@slave1 data]$ cd /data/zookeeper/
+    [hadoop@slave1 zookeeper]$ touch myid
+    [hadoop@slave1 zookeeper]$ echo '2' > myid
+    ...
+    slave2上为3
+		
+5.启动集群
+	分别启动zk：
+	  /opt/bigdata/zookeeper/bin/zkServer.sh start
+	
+  查看哪一台是集群管理：
+    /opt/bigdata/zookeeper/bin/zkServer.sh status
+  
+6.添加环境变量
+  [hadoop@master bigdata]$ sudo vi /etc/profile
+  添加：
+    export ZOOKEEPER_HOME=/opt/bigdata/zookeeper
+    export PATH=$ZOOKEEPER_HOME/bin:$PATH
+  [hadoop@master bigdata]$ . /etc/profile
+  
+7.进入命令行
+  [hadoop@master bigdata]$ zkCli.sh 
+  
+  [zk: localhost:2181(CONNECTED) 0] help
+  [zk: localhost:2181(CONNECTED) 1] ls /
+  [zookeeper]
+  [zk: localhost:2181(CONNECTED) 2] create /tmp info
+	Created /tmp
+	[zk: localhost:2181(CONNECTED) 3] get /tmp
+	info
+	cZxid = 0x100000002
+	ctime = Mon Dec 11 02:03:09 CST 2017
+	mZxid = 0x100000002
+	mtime = Mon Dec 11 02:03:09 CST 2017
+	pZxid = 0x100000002
+	cversion = 0
+	dataVersion = 0
+	aclVersion = 0
+	ephemeralOwner = 0x0
+	dataLength = 4
+	numChildren = 0
+	[zk: localhost:2181(CONNECTED) 4] set /tmp message
+	cZxid = 0x100000002
+	ctime = Mon Dec 11 02:03:09 CST 2017
+	mZxid = 0x100000003
+	mtime = Mon Dec 11 02:03:21 CST 2017
+	pZxid = 0x100000002
+	cversion = 0
+	dataVersion = 1
+	aclVersion = 0
+	ephemeralOwner = 0x0
+	dataLength = 7
+	numChildren = 0
+	[zk: localhost:2181(CONNECTED) 5] 
+
+
+
+zookeeper的默认配置文件为zookeeper/conf/zoo_sample.cfg，需要将其修改为zoo.cfg。其中各配置项的含义，解释如下：
+
+1.tickTime：CS通信心跳时间
+  Zookeeper 服务器之间或客户端与服务器之间维持心跳的时间间隔，也就是每个 tickTime 时间就会发送一个心跳。tickTime以毫秒为单位。
+  tickTime=2000  
+
+2.initLimit：LF初始通信时限
+  集群中的follower服务器(F)与leader服务器(L)之间初始连接时能容忍的最多心跳数（tickTime的数量）。
+  initLimit=5  
+
+3.syncLimit：LF同步通信时限
+  集群中的follower服务器与leader服务器之间请求和应答之间能容忍的最多心跳数（tickTime的数量）。
+  syncLimit=2  
+ 
+4.dataDir：数据文件目录
+  Zookeeper保存数据的目录，默认情况下，Zookeeper将写数据的日志文件也保存在这个目录里。
+  dataDir=/data/zookeeper
+
+5.clientPort：客户端连接端口
+  客户端连接 Zookeeper 服务器的端口，Zookeeper 会监听这个端口，接受客户端的访问请求。
+  clientPort=2181 
+
+6.服务器名称与地址：集群信息（服务器编号，服务器地址，LF通信端口，选举端口）
+  这个配置项的书写格式比较特殊，规则如下：
+  server.N=YYY:A:B 
+
+	server.1=itcast05:2888:3888
+	server.2=itcast06:2888:3888
+	server.3=itcast07:2888:3888

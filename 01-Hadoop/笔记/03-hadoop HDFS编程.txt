@@ -1,0 +1,1 @@
+1、使用JUnit4的@Before、@Test等注解的方法必须用public修饰

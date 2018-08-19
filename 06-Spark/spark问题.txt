@@ -1,0 +1,4 @@
+Spark优化之二：集群上运行jar程序，状态一直Accepted且不停止不报错
+http://www.cnblogs.com/shixiangwan/p/6195297.html
+http://blog.csdn.net/xtfge0915/article/details/52456516
+

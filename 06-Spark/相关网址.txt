@@ -1,0 +1,22 @@
+Spark运行模式（一）之Spark独立模式
+http://blog.csdn.net/happyanger6/article/details/47070223
+
+Spark的运行架构分析（二）之运行模式详解 
+http://blog.csdn.net/gamer_gyt/article/details/51833681
+
+Spark实践项目3:Spark运行模式及原理 
+http://blog.csdn.net/deryliu/article/details/52143243
+
+Spark运行模式及原理（一） 
+http://www.dataguru.cn/article-6803-1.html
+
+Spark Streaming开发入门——WordCount（Java&Scala）
+http://blog.csdn.net/lxhandlbb/article/details/51211631
+
+Kafka+Spark Streaming+Redis实时计算整合实践
+http://shiyanjun.cn/archives/1097.html
+
+Spark学习（二）---kafka+SparkStreaming的搭建与连接
+http://blog.csdn.net/asia_kobe/article/details/49933001
+
+spark-submit --master yarn-client --driver-memory 400M --executor-memory 512M --class com.adtec.spark.WordCount --jars /opt/cloudera/parcels/CDH/lib/spark/assembly/lib/spark-assembly-1.0.0-cdh5.1.3-hadoop2.3.0-cdh5.1.3.jar ./SparkExample.jar

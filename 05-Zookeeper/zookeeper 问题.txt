@@ -1,0 +1,8 @@
+无法启动：
+Using config: /home/hadoop/Development/zookeeper-3.4.5/bin/../conf/zoo.cfg
+Error contacting service. It is probably not running.
+
+
+1、只有启动两台后状态才正常 
+2、version2下的权限 问题
+3、未启动好，过几分钟就可以正常使用

@@ -1,0 +1,49 @@
+Spark 
+
+开源的、数据分析、开发快、运行快
+
+spark core批量处理、spark streaming流式处理、spark mllib机器学习、spark GraphX图计算
+
+spark基于内存的计算
+
+MapReduce处理海量数据，无法取代
+
+Storm实时流失处理，无法取代
+
+Hive无法取代
+
+Spark为什么快？基于内存、DAG优化
+
+Spark四种运行模式：Local、Standalone(Master、Zookeeper(配置HA))、Yarn(粗粒度的资源调用)、Mesos(可以细粒度的资源调用)
+
+RDD五大特性
+
+Cluster --> Worker Node --> Executors(进程、端口) --> Thread
+Application(main Driver(new SparkContext (DagScheduler TaskScheduler))) --> Job --> Stage --> Task 
+
+Transformation 是延迟执行 --> RDD RDD
+Action 是立即执行 --> RDD 结果
+
+缓存RDD 
+可以对反复调用的RDD进行缓存、为了多次使用的时候速度快
+默认的缓存策略是 StorageLevel.MEMORY_ONLY 
+MEMORY_AND_DISK
+_2
+_ser
+
+容错
+Lineage 重新计算 、如果lineage很长，是不是可以做缓存RDD来提高效率
+doCheckpoint("hdfs://") 之前需要setCheckpointDir()
+
+宽窄依赖概念的：
+宽依赖目的是为了切分Stage
+窄依赖目的是做DAG优化，一个partition会对应一个Task，会对应一个pipeline，1+1+1+1=4
+什么宽依赖？Shuffle 父RDD里面的partition会去向子RDD里面的多个partition
+
+spark程序代码会被转化为DAG、有向无环图 SparkContext.runJob(rdd)
+DAGScheduler会根据DAG切分Stage，被封装每个Stage为TaskSet，发送给下游的TaskScheduler submitTasks(TaskSet)
+TaskScheduler会跟Yarn进行沟通，把TaskSet打散为Task发配到真正的某一个Executor里面去计算
+
+碰到Struggling的Task，可以配置一个speculation的选项，会去发送一个同样的Task和之前的挣扎的Task竞争
+
+Spark-shell去执行WordCount ，PV、UV distinct() ， sortBy() sortByKey()

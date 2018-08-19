@@ -1,0 +1,109 @@
+hiveql函数笔记
+
+1、数据查询
+
+//提高聚合的性能
+
+SET hive.map.aggr=true;
+
+SELECT count(*),avg(salary) FROM employees;
+
+//木匾不允许在一个查询语句中使用多于一个的函数（DISTINCT。。。）表达式
+
+SELECT count(DISTINCT symbol) FROM stocks;
+
+ 
+
+表生成函数：
+
+explode(APPAY array)　　返回0到多行结果，每行都对应输入的array数组中的一个元素
+
+explode(ARRAY<TYPE> a)　　对于a中的每个元素，explode()会生成一个记录包含这个元素
+
+explode(ARRAY<TYPE> a)　　对于a中的每个元素，explode()会生成一行记录包含这个元素
+
+inline(ARRAY<STRUCT[,STRUCT]>)　　将结构体数组提取出来并插入到表中
+
+json_tuple(STRING jsonStr,p1,p2,..,pn)　　对输入的JSON字符串进行处理，合格get_json_object这个UDF类似，不过更高效，其通过一次调用就可以获取多个键值。
+
+parse_url_tuple(url,partname1,partname2,..,partNameN)　　其中N>=1，从URL中解析出N个部分信息。其输入参数是：URL，以及多个要抽取的部分的名称。部分名称是大小写敏感的，而且不应该包含有空格：HOST,PATH,QUERY,REF,PROTOCOL,AUTHORITY,FILE,USERINFO,QUERY:<KEY_NAME>
+
+ 
+
+其他内置函数：
+
+ascii(STRING s)　　返回字符串s中首个ASCII字符的整数值
+
+base64(BINARY bin)　　将二进制值bin转换成基于64位的字符串
+
+cast(<expr> as <type>)　　将expr转换成type类型的。例如:cast('1' as BIGINT)将会将字符串'1'转换成BIGINT数值类型。如果转换失败，则返回NULL
+
+concat(BINARY s1,BINARY s2,..)　　将二进制字节码按次序拼接成一个字符串
+
+concat(STRING s1,STRING s2,..)　　将字符串s1,s2等拼接成一个字符串。例如：concat('ab','cd')的结果是'abcd'
+
+concat)ws(STRING separator,STRING s1,STRING s2,...)　　和concat类似，不过是使用指定的分隔符进行拼接.
+
+decode(BINARY bin,STRING charset)　　使用指定的字符集charset将二进制值bin解码成字符串（支持的字符集有：'UTF-16'）。如果任一输入参数为NULL，则结果返回NULL
+
+encode(STRING src,STRING charset)　　使用指定的字符集charset将字符串src编码成二进制值（支持的字符集有:'US-ASCII','ISO-8859-1','UTF-8',UTF-16BE','UTF-16LE','UTF-16')）,如果任一输入参数为NULL，则结果为NULL
+
+find_in_set(STRING s,STRING commaSeparatedString)　　返回在以逗号分隔的字符串中s出现的位置，如果没有找到则返回NULL
+
+format_number(NUMBER X,INT d)　　将数值x转换成'#,###,###,##'格式字符串，并博保留d位小数。如果d为0，那么输出值就没有小数点后面的值。
+
+get_json_object(STRING json_string,STRING path)　　从给定路径上的JSON字符串中抽取JSON对象，并返回这个对象的JSON字符串形式。如果输入的JSON字符串是非法的，则返回NULL
+
+in_file(STRING s,STRING filename)　　如果文件名为filename的文件中有完整一行数据和字符串s完全匹配的话，则返回true
+
+instr(STRING str,STRING substr)　　查找字符串str中子字符串substr第一次出现的位置
+
+length(STRING s)　　计算字符串s的长度
+
+locate(STRING substr,STRING  [,INT pos])　　查找在字符串str中的pos位置后字符串substr第一次出现的位置
+
+lpad(STRING s,INT len,STRING pad)　　从左边开始对字符串s使用字符串pad进行填充，最终达到len长度为止。如果字符串s本身长度比len大的话，那么多余的部分被去除掉。
+
+rpad(STRING s,INT len,STRING pad)　　从右边开始对字符串s......
+
+ltrim(STRING s)　　将字符串s前面出现的空格全部去除掉。例如trim(' hive ')的结果是'hive '
+
+regexp_replace(STRING s,STRING regex,STRING replacement) 按照JAVA正则表达式regex将字符串s中符合条件的部分替换成replacement所指定的字符串a.如果replacement部分是空的话，那么符合正则的部门就会背去除掉。例如regexp_replace('hive','[ie]','z')的 结果是'hzvz'
+
+repeat(STRING s,INT n)　　重复输出n次字符串s
+
+reverse(STRING s)　　反转字符串
+
+rtrim(STRING s)　　将字符串s后面出现的空格全部去除掉。例如trim('hive')的结果是'hive'
+
+split(STRING s,STRING pattern)　　按照正则表达式pattern分隔字符串s,并将分割后的部分以字符串数组的方式返回。
+
+str_to_map(STRING s,STRING delim1,STRING delim2)　　将字符串s按照按指定分隔符转换成map,第一个参数是输入的字符串，第二个参数是键值对之间的分隔符，第三个分隔符是键和值之间的分隔符
+
+substr(STRING s,STRING start_index)　　对于字符串s,从start位置开始截取length长度的字符串，作为字符串。例如:substr('abcdefgh',3,2)的结果是'cd'
+
+unix_timestamp(STRING date,STRING pattern)　　将指定时间字符串格式字符串转换成Unix时间戳，如果格式不对则返回0，例如unix_timestamp('2009-03-20','yyyy-MM-dd')=1237532400
+
+to_date(STRING timestamp)　　返回时间字符串的日期部分，例如：to_date("1970-01-01 00:00:00")="1970-01-01"
+
+year(STRING date)　　返回时间字符串中的年份并使用INT类型表示。例如:year("1970-01-01") = 1970
+
+month....day...hour...minute...second...weekofyear同理
+
+datediff(STRING enddate,STRING startdate)　　计算开始时间startdata到结束时间enddata相差的天数。例如:datediff('2009-03-01','2009-02-27')=2
+
+date_add(STRING startdate,INT days)　　为开始时间startdata增加days天，例如data_sub('2008-12-31',1)='2008-12-30'
+
+ 
+
+谓词操作符
+
+A<=>B 　　如果A和B都为NULL则返回TRUE，其他的和等号(=)操作符的结果一致，如果任一为NULL则结果为NULL
+
+A<>B,A!=B　　A或者B为NULL则返回NULL，如果A不等于B则返回TRUE,反之返回FALSE
+
+A[NOT] BETWEEN B AND C　　如果A的值大于或等于B而且小于或等于C，则结果为TRUE
+
+A[NOT] like B　　B是一个SQL下的简单正则表达式
+
+A RLIKE B,A REGEXP B　　B是一个正则表达式，如果A与其相匹配，则返回TRUE。

@@ -1,0 +1,82 @@
+1.ETL（数据仓库技术），是英文 Extract-Transform-Load 的缩写，用来描述将数据从来源端经过抽取（extract）、转换（transform）、加载（load）至目的端的过程。
+2.Hive 的数据存储在 HDFS 中，大部分的查询由 MapReduce 完成（包含 * 的查询，比如 select * from tbl 不会生成 MapRedcue 任务）。
+3.Hadoop和Hive都是用UTF-8编码的
+4.用户定义数据格式需要指定三个属性：列分隔符（通常为空格、”\t”、”\x001″）、行分隔符（”\n”）以及读取文件数据的方法（Hive 中默认有三个文件格式 TextFile，SequenceFile 以及 RCFile）。
+5.由于在加载数据的过程中，不需要从用户数据格式到 Hive 定义的数据格式的转换，因此，Hive 在加载的过程中不会对数据本身进行任何修改，而只是将数据内容复制或者移动到相应的 HDFS 目录中
+	而在数据库中，不同的数据库有不同的存储引擎，定义了自己的数据格式。所有数据都会按照一定的组织存储。
+	因此，数据库加载数据的过程会比较耗时。
+6.Hive 要访问数据中满足条件的特定值时，需要暴力扫描整个数据，因此访问延迟较高。
+	由于 MapReduce 的引入， Hive 可以并行访问数据，因此即使没有索引，对于大数据量的访问，Hive 仍然可以体现出优势。
+7.RDBMS：关系型数据库管理系统（Relational Database Management System）
+8.Hive 中包含以下数据模型：Table，External Table，Partition，Bucket。
+9.在 Hive 中，表中的一个 Partition 对应于表下的一个目录
+10.	External Table 指向已经在 HDFS 中存在的数据
+11.	删除表时，表中的数据和元数据将会被同时删除。 
+12. External Table 只有一个过程，加载数据和创建表同时完成（CREATE EXTERNAL TABLE ……LOCATION），实际数据是存储在 LOCATION 后面指定的 HDFS 路径中，并不会移动到数据仓库目录中。当删除一个 External Table 时，仅删除表中的数据
+13. Hive 创建内部表时，会将数据移动到数据仓库指向的路径；若创建外部表，仅记录数据所在的路径，不对数据的位置做任何改变。在删除表的时候，内部表的元数据和数据会被一起删除，而外部表只删除元数据，不删除数据。
+14. bucket：桶
+15. 表名和列名不区分大小写，表名和列名不区分大小写。
+
+基本语法：
+16. if not exits：如果一个表已经存在
+		fields terminated by：关于来源的文本数据的字段间隔符
+		row format delimited：
+		stored as：STORED AS TEXTFILE/STORED AS SEQUENCE
+		eg：
+			create table if not exists t_employee(id int,name string) 
+			row format delimited 
+			fields terminated by '\t' 
+			stored as textfile;
+17. 外部表：
+		create  EXTERNAL  table t_employee(id int,name string) 
+		row format delimited 
+		fields terminated by '\t' 
+		stored as textfile 
+		location '/tmp-20170305';
+18. 加载数据：		
+		LOAD DATA INPATH '/user/admin/htduan' OVERWRITE INTO TABLE htduan;
+18.	我们的常用间隔符一般是Ascii码5，Ascii码7等。在hive中Ascii码5用’\005’表示， Ascii码7用’\007’表示		
+19. LOAD DATA后会删除hadoop上的文件
+
+分区：
+20. partitioned by (area string)
+		eg：
+			create table t_phone(id int, name string) 
+			partitioned by (area string)
+			row format delimited 
+			fields terminated by '\t' 
+			stored as textfile;
+21. 加载数据：
+		load data inpath '/tmp-20170305/phone_num.data' overwrite into table t_phone partition(area='china');
+22. 查询
+		select * from t_phone where area='china'
+			
+23. 复制空表：
+		create table t1 like t2
+		
+alter table
+24. alter table t_phone add partition(area='europe') location '/tmp-20170305/';
+25. alter table t_phone drop partition(area='europe');
+26. alter table table_name rename to new_table_name;
+27. alter table t_phone add columns(size int);
+28. alter table t_phone replace columns(id int, name string);
+		
+create view
+29. create view if not exists v_name as select ...
+
+30. show tables;/show tables 't*';
+31. show databases;
+32. show partitions t_phone_new;
+
+33. 表字段信息：desc t_phone;/describe t_phone;
+34. 前几行：select * from t_phone limit 3;
+
+35. ./hive -e 'select * from t_phone'
+
+36. Hive 只支持等值连接（equality joins）、外连接（outer joins）和（left/right joins）。
+		Hive 不支持所有非等值的连接，因为非等值连接非常难转化到 map/reduce 任务。
+		
+37. 只支持INSERT/LOAD操作，无UPDATE和DELTE
+38. Hive解析语句的时候，只要遇到分号就认为语句结束，而无论是否用引号包含起来。
+			
+

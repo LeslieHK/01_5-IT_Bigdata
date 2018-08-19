@@ -1,0 +1,40 @@
+1、网页查看Hadoop目录结构地址：http://programmer:50070/
+
+2、查看所有命令：
+   hadoop fs
+
+3、创建目录：
+   hadoop fs -mkdir /tmp/txt/
+
+4、本地复制到hadoop：
+   hadoop fs -copyFromLocal test.txt /tmp/txt/		==>	hadoop fs -put test.txt /tmp/
+   hadoop fs -copyFromLocal test.txt /tmp/txt/test2.txt
+
+5、本地追加到hadoop：
+   hadoop fs -appendToFile test.txt /tmp/txt/test.txt
+
+6、本地移动到hadoop：
+   hadoop fs -moveFromLocal test.txt /tmp/txt/test2.txt		==>	hadoop fs -get /tmp/txt/test.txt test.txt
+   hadoop fs -moveFromLocal test.txt /tmp/txt/
+
+7、查看文件：
+   hadoop fs -cat /tmp/txt/test.txt（该命令选项显示文件最后1K字节的内容。一般用于查看日志）
+   hadoop fs -tail /tmp/txt/test.txt
+   hadoop fs -text /tmp/txt/test.txt
+
+8、递归显示目录结构、删除：
+   hadoop fs -lsr /
+   hadoop fs -rmr /tmp/		==>	hadoop fs -rm -r /tmp/
+
+9、显示文件数量：
+   hadoop fs -count /
+
+10、创建空文年：
+    hadoop fs -touchz /tmp/txt/test4.txt
+
+10、其他命令：
+    copyToLocal、cp、du、df、ls、mv、moveToLocal、rm、rmdir
+
+11、如果hadoop命令中路径使用到*号，则要用全路径：hdfs://programmer:9000/
+    hadoop fs -cp hdfs://programmer:9000/* /tmp/
+

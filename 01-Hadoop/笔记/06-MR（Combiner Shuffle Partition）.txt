@@ -1,0 +1,70 @@
+﻿1.combiner
+	1.1是在每一个map task的本地运行，能收到map输出的每一个key的valuelist，所以可以做局部汇总处理
+	1.2因为在map task的本地进行了局部汇总，就会让map端的输出数据量大幅精简，减小shuffle过程的网络IO
+	1.3combiner其实就是一个reducer组件，跟真实的reducer的区别就在于，combiner运行maptask的本地
+	1.4combiner在使用时需要注意，输入输出KV数据类型要跟map和reduce的相应数据类型匹配
+	1.5要注意业务逻辑不能因为combiner的加入而受影响
+	1.6combiner的作用就是在map端对输出先做一次合并，以减少传输到reducer的数据量。
+
+
+2.hadoop的序列化机制
+	2.1跟jdk自带的比较起来，更加精简，只传递对象中的数据，而不传递如继承结构等额外信息
+	2.2要想让自定义的数据类型在hadoop集群中传递，需要实现hadoop的序列化接口Writable或者 WritableComparable<T>
+	2.3自定义的数据类型bean实现了Writable接口后，要实现其中的两个方法：
+		public void write(DataOutput out) throws IOException   ----序列化，将数据写入字节流
+		public void readFields(DataInput in) throws IOException  ----反序列化，从字节流中读出数据
+
+	注意：
+		写入数据和读出数据的顺序和类型要保持一致 
+
+3.自定义排序
+	3.1hadoop的排序是在shuffle中完成的
+	3.2排序的依据是map输出的key
+	3.3要想实现自定义的排序，就要将需要排序的数据封装到key中传输，并且要将数据实现WritableComparable接口
+	3.4排序MR默认是按key2进行排序的，如果想自定义排序规则，被排序的对象要实现WritableComparable接口，在compareTo方法中实现排序规则，然后将这个对象当做k2，即可完成排序
+
+4.实现分区的步骤：
+	4.1先分析一下具体的业务逻辑，确定大概有多少个分区
+	4.2首先书写一个类，它要继承org.apache.hadoop.mapreduce.Partitioner这个类
+	4.3重写public int getPartition这个方法，根据具体逻辑，读数据库或者配置返回相同的数字
+	4.4在main方法中设置Partioner的类，job.setPartitionerClass(DataPartitioner.class);
+	4.5设置Reducer的数量，job.setNumReduceTasks(6);
+
+	注意：
+		设置reduce task的数量，要跟AreaPartitioner返回的partition个数匹配
+		* 如果reduce task的数量比partitioner中分组数多，就会产生多余的几个空文件
+		* 如果reduce task的数量比partitioner中分组数少，就会发生异常，因为有一些key没有对应reducetask接收
+		* 如果reduce task的数量为1，也能正常运行，所有的key都会分给这一个reduce task
+		reduce task 或 map task 指的是，reuder和mapper在集群中运行的实例
+
+
+5.shuffle机制   ——  map task的输出数据 到 reduce task之间的一种数据调度机制
+	5.1shuffle中最重要的功能是分组和排序
+	5.2map task端先输出到本地缓存（内存缓冲区和磁盘文件）进行分组排序
+	5.3在reduce task端还要再次进行归并排序
+
+6.MR启动流程
+	start-mapred.sh  --> hadoop-daemon.sh --> hadoop --> org.apache.hadoop.mapred.JobTracker	
+
+
+	Jobtracker调用顺序：main --> startTracker  --> new JobTracker 在其构造方法中首先创建一个调度器，接着创建一个RPC的server（interTrackerServer）tasktracker会通过PRC机制与其通信
+然后调用offerService方法对外提供服务，在offerService方法中启动RPC server，初始化jobtracker，调用taskScheduler的start方法 --> eagerTaskInitializationListener调用start方法，
+--> 调用jobInitManagerThread的start方法，因为其是一个线程，会调用JobInitManager的run方法 --> jobInitQueue任务队列去取第一个任务，然后把它丢入线程池中，然后调用-->InitJob的run方法
+--> jobTracker的initJob方法 --> JobInProgress的initTasks --> maps = new TaskInProgress[numMapTasks]和reduces = new TaskInProgress[numReduceTasks];
+
+
+	TaskTracker调用顺序：main --> new TaskTracker在其构造方法中调用了initialize方法，在initialize方法中调用RPC.waitForProxy得到一个jobtracker的代理对象
+接着TaskTracker调用了本身的run方法，--> offerService方法  --> transmitHeartBeat返回值是（HeartbeatResponse）是jobTracker的指令，在transmitHeartBeat方法中InterTrackerProtocol调用了heartbeat将tasktracker的状态通过RPC机制发送给jobTracker,返回值就是JobTracker的指令
+heartbeatResponse.getActions()得到具体的指令，然后判断指令的具体类型，开始执行任务
+addToTaskQueue启动类型的指令加入到队列当中，TaskLauncher又把任务加入到任务队列当中，-->  TaskLauncher的run方法 --> startNewTask方法 --> localizeJob下载资源 --> launchTaskForJob开始加载任务 --> launchTask  --> runner.start()启动线程;  --> TaskRunner调用run方法 --> launchJvmAndWait启动java child进程
+
+
+
+
+
+
+
+
+
+
+

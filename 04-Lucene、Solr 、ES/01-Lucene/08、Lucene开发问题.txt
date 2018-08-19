@@ -1,0 +1,38 @@
+1、版本问题
+
+  目前最新版本已经到7.1，但是中文分词器IKAnalyzer只支持到4.x版本，已经停止维护
+  
+  最好开发4.x版本的lucene
+  
+2、Field
+
+  StringField：只索引，不分词（索引时要全部匹配）
+  
+	TextField：索引加分词
+
+3、中文分词器
+
+	// 细粒度分词
+  Analyzer analyzer = new IKAnalyzer();
+
+	// 智能分词
+	Analyzer analyzer = new IKAnalyzer(true);
+	
+4、Query类型
+
+	Term term = new Term("content",queryStr);
+	TermQuery luceneQuery = new TermQuery(term);
+           
+ 	// 使用QueryParser查询分析器构造Query对象
+	QueryParser qp = new QueryParser(Version.LUCENE_4_9, fieldName, analyzer);
+	qp.setDefaultOperator(QueryParser.AND_OPERATOR);
+	Query query = qp.parse(queryStr);
+        
+5、查看索引
+
+	使用 luke jar包
+	
+6、编码
+
+  文本的编码要设置成utf-8，否则中文索引会一直出不了结果
+  

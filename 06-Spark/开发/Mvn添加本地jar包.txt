@@ -1,0 +1,2 @@
+mvn install:install-file -Dfile=spark-assembly-1.6.2-hadoop2.6.0.jar -DgroupId=org.apache.spark -DartifactId=spark-assembly-1.6.2-hadoop -Dversion=2.6.0 -Dpackaging=jar
+-Dspark.master=local

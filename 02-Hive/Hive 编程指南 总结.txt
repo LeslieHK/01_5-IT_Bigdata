@@ -1,0 +1,1356 @@
+Hive 编程指南 总结
+
+
+一、基础知识
+
+
+1.各大数据主键开发商
+
+  Hadoop							Google
+  Hive								Facebook
+  Pig									Yahoo
+  HBase								Google
+  Hue									Cloudera
+	
+
+2.MapReduce：计算模型
+
+
+3.HDFS：这个文件系统是可插拔的
+
+
+4.Hive可以将大多数查询转换为MapReduce任务（Job）
+
+
+5.Hive特点
+
+  a) Hive最适合于数据仓库应用程序
+  
+  b) 使用该应用程序进行相关的静态数据分析
+  
+  c) 不需要快速响应给出结果
+  
+  d) 数据本身不会频繁变化
+  
+  
+6.Hive限制
+
+	a) Hive不支持记录级别的更新、插入或者删除
+	
+	b) MapReduce任务（Job）的启动过程需要消耗较多的时间
+	
+	c) 不支持事务
+	
+	
+7.ANSI SQL：美国国家标准化组织
+
+
+8.HiveQL和MySQL提供的SQL方言最接近
+
+
+9.Hadoop的Sort（排序）和Shuffle（重新分发）会按照键来对键-值对进行排序，然后“重新洗牌”
+
+
+10.图形化界面：Cloudera提供的开源的Hue项目
+
+
+11.Hive发行版中附带的模块有CLI，一个称为Hive网页界面（HWI）的简单网页界面，以及可通过JDBC、ODBC和一个Thrift服务器进行编程访问的几个模块
+
+
+12.Hive本身不会生成java MapReduce 算法程序的。相反，Hive通过一个表未“job执行计划”的XML文件驱动执行内置的、原生的Mapper和Reducer模块
+
+
+13.Hive通过和JobTracker通信来初始化MapReduce任务
+
+
+14.Metastore（元数据存储）是一个独立的关系形数据库（通常是一个MySQL实例），Hive会在其中保存表模式和其他系统元数据
+
+
+15.Pig是由Yahoo！开发完成的，而同时期Facebook正在开发hive 
+
+
+16.Pig被描述成一种数据流语言
+
+
+17.HBase是一个分布式的、可伸缩的数据存储，其支持行级别的数据更新、快速查询和行级事务（但不支持多行事务）
+
+
+18.HBase：列存储，其每一行都使用一个唯一键来提供非常快的速度读写这一行的列或列族
+
+
+19.Hive和Pig都是图灵完全性的（图灵完全性通常指具有无限存储能力的通用物于是机器或编程语言）
+
+
+二、基础操作
+
+
+20.免费虚拟机：VMWarePlayer
+
+
+21.添加环境变量三个方式
+
+	a) /et/profile
+	
+	b) /et/profile.d/bashname
+	
+	c) $HOME/.bashrc
+	
+
+22.伪分布式：只有一个节点的“集群”
+
+
+23.Hive变量
+
+	set hive.exec.mode.local.auto=true
+	
+	set hive.cli.print.current.db=true
+	
+	set hive.cli.print.header=true
+	
+	
+24.hive-site.xml
+
+	<property><name>hive.metastore.warehouse.dir</name><value>/user/hive/warehouse</value><property>
+	
+	<property><name>javax.jdo.option.ConnectionURL</name><value>...</value><property>
+	
+	hive.metastore.local提供文档信息，这个属性控制着是否连接到一个远程metastore server或者是否作为Hive Client JVM的构成部分重新打开一个新的metastore server
+	
+	
+25.Hadoop查看文件系统
+
+	hadoop fs -ls /
+	
+	hadoop dfs -ls /
+	
+	hdfs dfs -ls /
+	
+	
+26.Linux 下载
+
+	wget
+	
+	curl -o
+	
+	
+27.如果一个命令或者查询执行成功，那么输出中的第1行将是OK，然后才会紧跟着输出内容，最后以一行表示命令或查询执行所消耗的时间的输出信息结尾
+
+
+28.hive和服务帮助命令
+
+	hive --help --service cli
+	
+	hive -h 等价于 hive --help --service cli
+	
+	
+29.hive --define key=value 等价于 cli中set key=value;
+
+
+30.Hive中的命名空间
+
+	hivevar			可读/可写
+	
+	hiveconf		可读/可写
+	
+	system			可读/可写
+	
+	env					只可读
+	
+	
+31.获取变量信息
+
+	set hive.execution.engine;
+	
+	---------------------------------
+	|             set                |
+	---------------------------------
+	|    hive.execution.engine=mr    |
+	---------------------------------
+	
+	变量前可以加命名空间：set hiveconf:hive.execution.engine;
+	
+	
+32.set -v; 或者 set; 非常多的变量信息
+
+	如果不加-v标记，set命令会打印出命句空间hivevar，hiveconf，system和env中所有的变量
+	
+	使用-v标记，则还会打印Hadoop中所定义的所有属性
+	
+	hive -S -e "set" | grep warehouse
+	
+	
+32. --hivevar和--define标记是相同的
+
+
+33.set system:user.name;
+
+
+34.hive参数
+
+	-e	：	一次执行
+	-S	：	静默模式（去掉“OK”和“Time taken“等行）
+	-f	：	执行HQL文件
+	-i	：	指定hiverc文件
+	
+
+35.$HOME/.hiverc
+
+
+36.Hive CLI 可以自动补全
+
+	当向CLI中输入语句时，如果某些行是以Tab键开头的话，就会产生一个常见的令人困惑的错误。
+	
+	用户这时会看到一个”是否显示所有可能的情况“的提示，而且输入流后面的字符会被认为是对这个提示的回复，也因此会导致致命的执行失败
+	
+	
+37.Hive CLI可以执行简单的bash shell命令。只要在命令前加!并且以分号（;)结尾就可以
+
+	但不能使用需要用户进行输入的交互式命令，而且不支持shell的”管道“功能和文件名的自动补全功能
+	
+	
+38.hive和beeline的区别
+
+	a) beeline是远程连接hiveserver2，
+		 hive是本地客户端
+		 
+	b) beeline不支持 exit; source /xxx;
+		 hive支持
+		 
+	c) beeline不支持执行base shell（! pwd ;）
+		 hive支持
+		 
+	d) beeline：	--silent
+		 hive：			-S
+		 
+
+三、数据类型和文件格式
+
+
+38.数据类型
+
+	tinyint
+	
+	smallint
+	
+	int
+	
+	bigint
+	
+	boolean
+	
+	float
+	
+	double
+	
+	string
+	
+	timestamp
+	
+	binary
+	
+	date
+	
+	decimal：不属于浮点数类型，可以划分整数和小数部份
+	
+	
+	STRUCT：STRUCT<streent:STRING, city:STRING, state:STRING>
+	
+	MAP：MAP<STRING,FLOAT>
+	
+	ARRAY：ARRAY<STRING>
+	
+	
+39.在其他SQH方言中，通常会提供限制最大长度的”字符数组“（也就是很我字符串）类型，但需要注意的是Hive中不支持这种数据类型。
+
+	关系型数据库提供这个功能是出于性能考虑。因为定长的记录更容易进行建立索引，数据扫描，等等。
+	
+	在Hive所处的”宽松“的世界里，不一定拥有数据文件但必须能够支持使用不同的文件格式。。。
+	
+	
+40.时区间互相转换的内置函数：to_utc_timestamp()、from_utc_timestamp()
+
+
+41.类型转换函数：cast(a AS INT)
+
+
+42.逗号分割值：CSV
+
+	制表符分割值：TSV
+	
+	
+43.分割符：
+
+	\n							|
+									|
+	^A（CTRL+A）		|			用于分隔字段（列）。八进制编码\001
+									|
+	^B							|			用于分隔ARRAY或STRUCT的元素，或用于MAP中键-值对之间的分隔。八进制编码\002
+									|
+	^C							|			用于MAP中键和值之间的他隔。八进制编码\003
+	
+	
+44.标准建表语句
+
+	create table A(
+		id	bigint,
+		name string,
+		age	int,
+		num	float,
+		money	decimal,
+		bir	date
+	)
+	row format delimited
+	fields terminated by '\001'
+	collection items terminated by '\002'
+	map keys terminated by '\003'
+	
+	lines terminated by '\n'
+	
+	stored as orcfile
+	;
+	
+	ROW FORMAT DELIMITED 这组关键字必须要写在其他子句（除了STORED AS ...子句）
+	
+	字符\001是^A的八进制
+	
+	Hive到目前为止对于 LINES TERMINATED BY ...仅支持字符'\n'，也就是说行与行之间的分隔只能为'\n'。因此这个子句使用起来还是有限制的
+	
+	
+45.传统数据库是写时模式，即数据在写入数据库时对模式进行检查
+
+	Hive不会在数据加载时进行验证，而是在查询时进行，也就是读时模式
+	
+	
+四、HiveQL：数据定义
+
+
+46.数据库（* 所有的数据库相关命令中，都可以用 SCHEMA 代替 DATABASE）
+
+	默认的数据库：
+	
+				default
+	
+	创建数据库：
+	
+				CREATE DATABASE financials;
+				
+				CREATE DATABASE IF NOT EXISTS financials;
+	
+	查看数据库：（可以用正则匹配筛选需要的数据库：SHOW DATABASES LIKE 'h.*; Hive并非支持所有的正则表达式）
+	
+				SHOW DATABASES;
+					
+				
+	Hive会为每个数据库创建一个目录。数据库中的表会以这个数据库目录的子目录形式存储。有一个例外是default数据库中的表，因为这个数据库本身没有自己的目录
+	
+	数据库所在的目录位于属性hive.metastore.warehouse.dir所指定的顶层目录之后
+	
+	数据库的文件目录名是以.db结尾的文件夹
+	
+	修改默认的位置（使用location时，db路径要先创建）：
+	
+				CREATE DATABASE financials LOCATION '/my/preferred/directory'
+				
+	添加描述信息：
+	
+				CREATE DATABASE financials COMMENT 'Holds all financial tables';
+				
+	查看表信息：
+	
+				DESCRIBE DATABASE financials;
+				
+				DESC DATABASE financials;
+	
+	hdfs:///user/hive/warehouse/financials.db和hdfs://master-server/user/hive/warehouse/financials.db
+	
+	为了脚本的可移植性，通常会省略那个服务器和端口号信息
+	
+	不幸的是，并没有一个命令可以让用户查看当前所在的是哪个数据库
+	
+	默认情况下，Hive是不允许用户删除一个包含有表的数据库的。用户要么先删除数据库中的表，然后再删除数据库；要么在删除命令的最后加上关键字CASCADE
+	
+				DROP TABLE IF EXISTS financials CASCADE;
+	
+	
+47.表
+
+	建表语句：
+	
+				CREATE TABLE IF NOT EXISTS mydb.employees (
+				
+					name STRING COMMNET 'employee name')
+					
+				COMMNET 'Description of the table'
+				
+				LOCATION '/usr/hive/warehouse/mydb.db/employees';
+				
+	拷贝表：
+	
+				拷贝表结构，包括分区信息
+	
+							CREATE TABLE IF NOT EXISTS mydb.employees2 
+							
+							LIKE mydb.employees;
+							
+				只拷贝字段信息
+							
+							CREATE TABLE IF NOT EXISTS mydb.employees2 
+							
+							AS
+							
+							SELECT * FROM mydb.employees
+							
+							WHERE 1=2;
+							
+				两个不等价
+				
+	列举表：
+	
+				SHOW TABLES IN mydb;
+			
+				SHOW TABLES LIKE 't.*';
+			
+				SHOW TABLES 't.*';
+			
+				SHOW TABLES 't.*' IN mydb; （新版同时支持IN db和正则表达式）
+			
+	查看表：
+	
+				DESCRIBE/DESC EXTENDED mydb.employees;（详细表结构信息，但格式错乱）
+			
+				DESCRIBE/DESC FORMATTED mydb.employees;（详细表结构信息）
+			
+				DESCRIBE/DESC mydb.employees;
+			
+	删除表：
+	
+				DROP TABLE IF EXISTS employees;
+				
+	表重命名：
+	
+				ALTER TABLE log_messages RENAME TO logmsgs;
+				
+			
+48.分区表和管理表
+
+	我们目前所创建的表都是所谓的管理表，有时也被称为内部表，Hive会控制着数据的生命周期，Table Type: MANAGER TABLE
+	
+	外部表：
+	
+				CREATE EXTERNAL TABLE ...
+				
+	用户可以使用其他工具（例如hadoop的dfs命令等）来修改甚至删除管理表所在的路径目录下的数据
+	
+	Hive实际上对于所存储的文件的完整性以及数据内容 是否和表模式相一致并没有支配能力甚至管理表都没有给用户提供这些管理能力
+	
+	用户可以在DESCRIBE EXTENDED tablename语句的输出中查看表是否是管理表或外部表
+	
+				... tableType:MANAGERED_TABLE)
+				
+				... tableType:EXTERNAL_TALBLE)
+				
+	对外部表的复制还是外部表
+	
+	在同一个查询中可以同时增加多个分区
+	
+	修改分区的路径：(这个命令不会将数据从旧的路径转移走,也不会删除旧的数据)
+	
+				ALTER TABLE log_messages PARTITION(year=2012, month=12, day=2)
+				
+				SET LOCATION '...'
+	
+	指定分区时不能使用函数：
+	
+				ALTER TABLE log_messages PARTITION(year=(2011+1), month=12, day=2) ... 错误
+	
+	
+49.分区表
+
+	创建分区表
+	
+				CREATE TABLE employees (
+				
+					name STRING)
+					
+				PARTITION BY (country STRING, state STRING);
+			
+	将Hive设置为”strict（严格）“模式，这样如果对分区表进行查询而WHERE子句没有加分区过滤的话,将会禁止提交这个任务
+	
+				set hive.mapred.mode = strict;
+				
+	查看表分区：
+	
+				SHOW PARTITIONS employees;
+	
+	如果表中现在存在很多的分区，而用户只想查看是否存储某个特定分区键的分区的话：
+	
+				SHOW PARTITIONS employees PARTITION(country='US);
+				
+	就查询而言，分区键是字段
+	
+	
+				ALTER TABLE log_messages ADD PARTITION(year = 2012, month = 1, day =2)
+				
+				LOCATION 'hdfs://master_server/data/log_messages/2012/01/02';
+				
+				ALTER TABLE log_messages ADD PARTITION(year = 2012, month = 1, day =2)
+				
+				SET LOCATION 'hdfs://master_server/data/log_messages/2012/01/02';
+				
+	查看分区路径：
+	
+				DESC FORMATTED log_messages PARTITION(year=2012, month=1, day=2);
+				
+
+50.文件格式（SEQUENCEFILE和RCFILE这两种文件格式是使用二进制编码和压缩来优化磁盘空间和IO带宽性能的）
+
+	TEXTFILE
+	
+	SEQUENCEFILE
+	
+	RCFILE
+	
+	
+51.记录编码是通过一个iputformat对象来控制的（org.apache.hadoop.mapred.TextInputFormat）
+
+	记录的解析是由序列化和反序列化器（或缩写为serde）来控制的
+	
+	outputformat
+	
+	
+52.ROW FORMAT SERDE ...来指定了使用的SerDe
+
+	STORED AS INPUTFORMAT ... OUTPUTFORMAT ...子句分别指定了用于输入格式和输出格式的Java类
+	
+	如果要指定，用户必须对输入和输出格式都进行指定
+	
+
+53.修改、添加列
+
+	重命名、修改其位置、类型或注释
+	
+				ALTER TABLE log_messages
+				
+				CHANGE COLUMN hms hours_minutes_seconds INT
+				
+				COMMENT '...'
+				
+				AFTER severity;
+				
+				可以用FIRST替换AFTER
+				
+	添加列：
+	
+				... ADD COLUMN ...
+				
+	替换所有列：
+	
+				REPLACE COLUMNS
+				
+				
+54.Hive提供了各种保护,防止分区被删除和被查询
+
+	ALTER TABLE log_message PARTITION(year=2012, month=12, day=1) ENABLE NO_DROP;
+	
+	ALTER TABLE log_message PARTITION(year=2012, month=12, day=1) ENABLE OFFLINE;
+	
+	可以用DISABLE替换ENABLE
+
+				
+五、HiveQL：数据操作
+
+55.装载数据
+
+	LOAD DATA LOCAL INPATH '...'
+	
+	OVERWRITE INTO TABLE employees
+	
+	PARTITION(country = 'US', state = 'CA');
+	
+	如果分区目录不存在，这个命令会先创建分区目录
+	
+	支持相对路径。当使用本地模式执行时，相对路径径相对的是Hive CLI启动时用户的工作目录。对于分布式或者伪分布式模式，这个路径解读为相对于分布式文件系统中用户的根目录
+	
+	INPATH子句中使用的文件路径还有一个限制，那就是这个路径下不可以包含任何文件夹						
+		
+	LOAD DATA INPATH 装载数据后inpath后的hdfs中的文件会被删除
+		
+			
+56.通过查询语句向表中插入数据
+
+	1)
+
+				INPUT OVERWRITE/INTO TABLE employees
+				
+				PARTITION(country = 'US', state = 'OR')
+				
+				SELECT * FROM staged_employees se
+				
+				WHERE se.cnty = 'US AND se.st = 'OR'; 			
+	
+	2)
+	
+				FROM staged_employees se
+				
+				INPUT OVERWRITE TABLE employees
+				
+					PARTITION(country = 'US', state = 'OR')
+				
+					SELECT * WHERE se.cnty = 'US AND se.st = 'OR'
+					
+				INPUT OVERWRITE TABLE employees
+				
+					PARTITION(country = 'US', state = 'CA')
+				
+					SELECT * WHERE se.cnty = 'US AND se.st = 'CA';
+					
+57.动态分区
+
+	INSERT OVERWRITE TABLE employees
+	
+	PARTITION(country, state)
+	
+	SELECT ..., se.cnty, se.st
+	
+	FROM staged_employees se;
+	
+	用户可以混合使用动态分区和静态分区
+	
+	静态分区键必须在动态分区键之前
+	
+	动态分区功能默认情况下没有开启。开启后，默认是以“严格”模式执行的
+	
+				set hive.exec.dynamic.partition=true;（默认是false）
+				
+				set hive.exec.dynamic.partition.mode=strict;（默认是nonstrict）
+				
+				
+58.创建表并加载数据
+
+	CREATE TABLE ca_employees
+	
+	AS SELECT name, salary, address
+	
+	FROM employees
+	
+	WHERE se.state = 'CA';
+	
+	这里本身没有数据“装载”，而是将元数据中指定一个指向数据的路径
+	
+	
+59.导出数据
+
+	INSERT OVERWRITE LOCAL DIRECTORY '...'
+	
+	SELECT name, salary, address
+	
+	FROM employees
+	
+	WHERE se.state = 'CA';
+	
+	只能用OVERWRITE不能INTO
+	
+	
+六、HiveQL：查询
+
+60.SELECT是SQL的射影算子
+
+
+61.集合的字符吕是加上引号的，而基本数据类型STRING的列值是不加引号的。集合提取出的STRING数据类型的值将不会再加引号
+
+
+62.我们甚至可以使用正则表达式来选择我们想要的列
+
+	SELECT symbol, `price.*` FROM stocks;
+	
+
+63.函数
+
+	upper、lower
+	
+	round
+	
+	floor、ceil、ceiling
+	
+	explode: 表生成函数，处理array、map，返回0到多行结果，每行对应输入的array数组中的一个元素
+		
+				当使用表生成函数时，Hive要求使用列别名
+	
+	cast(<expr> as <type>)
+	
+	concat
+	
+	concat_ws(STRING separator, STRING s1, STRING s2, ...): 用指定的分隔符separator，将字符串s1，s2等拼接成一个字符串
+	
+	format_number(NUMBER x, INT d: 将数值转换成'#,###,###.##'格式字符串，并保留d位小数
+	
+	ltrim
+	
+	regexp_extract(STRING subject, STRING regex_pattern, STRING index): 抽取字符串subject中符合正则表达式regex_pattern的第index个部分的子字符，index从1开始
+		
+				GP中substring可以用正则表达式抽取substring(dt, '([0-9]{1,100})')
+				
+				在Hive中用regexp_extract替换
+				
+	regexp_replace(STRING subject, STRING regex, STRING replacement)
+	
+	split(STRING s, STRING pattern)[0]
+	
+				GP对应的语法：split_part(STRING s, STRING pattern, 1)
+				
+				GP的spit_part从1开始算起，Hive的split得到的是array，从0开始算起
+				
+	substr、substring
+	
+	from_unixtime
+	
+	year('1999-01-01'): '1999'
+	
+	month('1999-01-01'): '01'
+	
+	day('1999-01-31'): '31'
+	
+	datediff('1999-01-31', '1999-01-01'): 30
+	
+	date_add('1999-01-01', 30): '1999-01-31'
+	
+	date_sub('1999-01-31', 30): '1999-01-01'
+	
+	
+	
+64.目前不允许在一个查询语句中使用多于一个的函数(DISTINCE ..)
+
+
+65.以下情况会避免MR
+
+	a.查全表
+	
+	b.查某个分区所有数据
+	
+	c.limit
+	
+	
+66.最好将 set hive.exec.mode.local.auto=true; 这个设置添加到你的$HOME/.hiverc配置文件中
+
+
+67.WHERE 后面带的是谓词表达式
+
+
+68.不能在 WHERE 语句中使用列名，因为hive“执行计划”先执行 WHERE 再执行 SELECT
+
+
+69.浮点型陷阱
+
+	float的0.2（0.20000001）大于double的0.2（0.2000000000000001）
+	
+	如果字段为float，则 cl > 0.2 的结果是 true
+	
+	
+70.LIKE和RLIKE
+
+	简单对比：
+	
+				SELECT 'abc' LIKE 'a+.*';					FALSE
+				
+				SELECT 'abc' RLIKE 'a+.*';				TRUE
+
+	RLIKE可以通过Java的正则表达式来指定匹配条件
+	
+	
+71.HAVING 子句允许用户通过一个简单的语法完成原本需要通过子查询才能对GROUP BY语句产生的分组进行条件过滤的任务
+
+	SELECT ymd FROM stocks
+	
+	WHERE exchange = 'xxx'
+	
+	GROUP BY ymd
+	
+	HAVING avg(price_close) > 50.0;
+	
+	
+72.Hive的Join不支持非等值连接，主要原因是通过MapReduce很难实现这种类型的连接
+
+	Hive目前还不支持在ON子句中的谓词间使用OR
+	
+	
+73.当对3个或者更多个表进行JOIN连接时，如果每个ON子句都使用相同的连接键的话，那么只会产生一个MapReduce job
+
+
+74.用户需要保证连接查询中的表的大小从左到右是依次增加的
+
+	SELECT /*+STREAMTABLE(s)*/s.ymd, s.symbol, s.price_close, d.dividend
+	
+	FROM stocks s JOIN dividends d ON s.ymd = d.ymd AND s.symbol = d.symbol
+	
+	WHERE s.symbol = 'AAPL';（s是大表）
+	
+	
+75.INNER JOIN/JOIN
+
+	LEFT OUTER JOIN/LEFT JOIN
+	
+	RIGHT OUTER JOIN/RIGHT JOIN
+	
+	FULL OUTER JOIN/FULL JOIN
+	
+	
+76.LEFT SEMI JOIN 左半开连接，会返回左边表的记录，前提是其记录对于右边表满足ON语句中的判定条件
+
+	用于替代 IN  ...  EXISTS，如下
+	
+	SELECT s.ymd, s.symbol, s.price_close FROM stocks s 
+	
+	WHERE s.ymd, s.symbol IN
+	
+	(SELECT d.ymd, d.symbol FROM dividends d);
+	
+	a) SELECT和WHERE语句不能引用到右表中的字段
+	
+	b) Hive不支持右半开连接
+	
+	c) SEMI JOIN 比通常的INNER JOIN更高效
+	
+	
+	例：
+	
+				表a:
+				
+				-----------------
+				  id   |   name  
+				-----------------
+				  1         a
+				  2         b
+				  3         c
+				-----------------
+				
+				表b:
+				
+				-----------------
+				  id   |   name  
+				-----------------
+				  3         c
+				  3         c
+				  4         d
+				-----------------
+				
+				LEFT JOIN查询：
+				
+				SELECT * FROM a LEFT JOIN b ON a.id = b.id;
+				
+				-------------------------------------------
+				  a.id   |   a.name  |  b.id   |   b.name  
+				-------------------------------------------
+				   1          a           NULL		   NULL
+				   2          b						NULL			 NULL
+				   3          c						 3					c
+				   3          c						 3					c
+				-------------------------------------------
+				
+				LEFT SEMI JOIN查询：
+				
+				SELECT * FROM a LEFT SEMI JOIN b ON a.id = b.id;
+				
+				---------------------
+				  a.id   |   a.name  
+				---------------------
+				    3         c
+				---------------------
+				
+				
+77.如果设置hive.mapred.mode值为strict的话，Hive会阻止用户执行笛卡乐积查询
+
+
+78.如果所有表中只有一张是小表，那么可以在最大的表通过mapper的时候将小表完全放到内存中。Hive可以在map端执行连接过程（称为map-side JOIN）
+
+	set hive.auto.convert.join = true;
+	
+	Hive对于右外连接和全外连接不支持这个优化
+	
+	
+79.ORDER BY 和 SORT BY 
+
+	ORDER BY会有一个所有数据都通过一个reduce进行处理的进程。对于这个大数据集，这个过程可能会消耗太过漫长的时间来执行
+	
+	SORT BY，其只会在每人reduce中对数据进行排序，也就是一个局部排序过程。这样可以提高后面进行的全局排序的效率
+	
+	
+80.DISTRIBUTE BY
+
+	默认情况下，MapReduce计算框架会依据map输入的键计算相应的哈希值，然后按照得到的哈希值将建-值对均匀分到多个reduce中去
+	
+	我们使用SORT BY时，不同reducer的输出内容会有明显的重叠
+	
+	
+	DISTRIBUTE BY + SORT BY ==? ORDER BY
+	
+	
+	需要注意的是，Hive要求DISTRIBUTE BY 语句要写在SORT BY语句之前
+	
+	
+81.CLUSTER BY
+
+	如果DISTRIBUTE BY语句和SORT BY语句中涉及到的列完全相同，而且采用的是升序排序方式，那么这种情况下，CLUSTER BY就等价于前面的那2个语句
+	
+	
+82.抽样查询
+
+	SELECT * FROM numbers TABLESAMPLE(BUCKET 3 OUT OF 10 ON rand()) s;
+	
+	非rand()函数进行分桶的话，那么同一语句多次执行的返回值是相同的
+	
+	SELECT * FROM numbers TABLESAMPLE(BUCKET 3 OUT OF 10 ON number)) s;
+	
+	分桶语句中的分母表示的是数据将会被散列的桶的个数，而分子表示将会选择的桶的个数
+	
+	
+83.Hive提供了另外一种按照抽样百分比进行抽样的方式 ，这种是基于行数的，按照输入路径下的数据块百分比进行的抽样
+
+	SELECT * FROM numberflat TABLESAMPLE(0.1 PERCENT) s;
+	
+	如果表的数据大小大于普通的块大小128MB的话，那么将会返回所有行
+	
+	
+84.UNION ALL
+
+	UNION ALL可以将2个或多个表进行合并，每一个union子查询都必须具有相同的列，而且对应的每个字段的字段类型必须是一致的
+	
+	
+七、HiveQL：视图
+
+85.视图是一个逻辑结构，Hive目前不支持物化视图
+
+
+86.过程
+
+	当一个查询引用一个视图时，这个视图所定义的查询语句将和用户的查询语句组合在一起，然后供hive制定查询计划
+	
+
+87.视图可以降低查询的复杂度
+
+
+88.有些数据库不给用户直接访问具有敏感数据的原始表，而是提供给用户一个通过WHERE子句限制的视图，以供访问。Hive目前并不支持这个功能，
+
+	因为用户必须具有能够访问整个底层原始表的权限，这时视图才能工作
+	
+	
+89.如果AS SELECT子句中包含没有命名别名的表达式的话，那么Hive将会用_CN作为新的列名，其中N表示从0开始的一个整数
+
+	CREATE VIEW IF NOT EXISTS shipments(ti me, part)
+	
+	COMMENT ''
+	
+	AS SELECT ...;
+	
+	
+90.SHOW TABLES 同样可以查看视图
+
+
+91.视图是只读的
+				
+
+八、HiveQL：索引
+
+92.Hive只有有限的索引功能。Hive中没有普通关系型数据库中键的概念
+
+
+93.创建索引
+
+	CREATE INDEX employees_index
+	
+	ON TABLE employees(country)
+	
+	AS 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler'
+	
+	WITH DEFERRED REBUILD
+	
+	IN TABLE employees_index_table
+	
+	PARTITIONED BY (country, name)
+	
+	COMMENT '...';
+	
+	
+	ALTER INDEX employees_index ON TABLE employees REBUILD;
+	
+	
+	“AS ...”指定了索引处理器。包括： “org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler”和“BitMap”
+	
+	“WITH DEFERRED REBUILD”处理后索引呈空白状态，要执行“ALTER INDEX employees_index REBUILD;”后才有数据
+	
+	Hive的索引是维护一张物理表，“IN TABLE employees_index_table”则指定了这张索引物理表
+	
+	
+94.bitmap索引普遍应用于排重后值较少的列
+
+
+95.显示索引
+
+	SHOW FORMATTED INDEX ON empoyees;
+	
+	
+96.删除索引
+
+	Hive: DROP INDEX IF EXISTS employees_index ON employees;
+	
+	其他: DROP INDEX IF EXISTS employees_index;
+	
+	
+九、模式设计
+
+97.按天划分的表应该使用分区表
+
+
+98.分区表使用不合适也会带来一些问题
+
+	a. 使用过多分区可能导致的一个问题就是会创建大量的非必须的Hadoop文件和文件夹，最终就会超出NameNode对系统元数据信息的处理能力。
+	
+		 因为NameNode必须要将所有的系统文件的元数据保存在内存中。
+	
+	b. MapReduce会将一个任务（job）转换成多个任务（task）。默认情况下，每个task都是一个新的JVM实例，都需要开启和销毁的开销。
+	
+		 对于小文件，每个文件都会对应一个task。在一些情况下，JVM开启和销毁的时间中销毁可能会比实际处理数据的时间消耗要长！
+		 
+		 
+99.Hive没有主键或基于序列密钥生成的自增键的概念。应避免对非标准化数据进行连接（JOIN）操作
+
+
+100.复杂的数据类型，如array、map和struct，有助于实现在单行中存储一对多数据
+
+
+101.Hive本身提供一个独特的语法，它可以从一个数据源产生多个数据聚合，而无需每次聚合都要重新扫描一次。对于大的数据输入集来说，这个优化可以节约非常可观的时间
+
+	效率低：
+	
+				INSERT OVERWRITE TABLE sales
+				
+				SELECT * FROM history WHERE action = 'purchased';
+				
+				INSERT OVERWRITE TABLE credits
+				
+				SELECT * FROM history WHERE action = 'returned';
+				
+	效率高：
+	
+				FROM history
+				
+				INSERT OVERWRITE TABLE sales
+				
+				SELECT * WHERE action = 'purchased'
+				
+				INSERT OVERWRITE TABLE credits
+				
+				SELECT * FROM history WHERE action = 'returned';
+				
+				
+102.分桶
+
+	CLUSTERED BY (user_id) INTO 96 BUCKETS;
+	
+	需要设置一个属性来强制Hive为目标表的分桶初始化过程设置一个正确的reducer个数
+	
+	set hive.enforce.bucketing = true;
+	
+	如果没有使用hive.enforce.bucketing属性，那么就需要自己设置和分桶个数相匹配的reducer个数
+	
+	set mapred.reduce.tasks = 96;
+	
+	对于所有表的元数据，指定分桶并不能保证表可以正确地填充
+	
+	
+103.增加列
+
+	如果某行的字段个数比预期的要少，那么缺少的字段将会返回null。如果某行的字段个数比预期的要多，那么多的字段会被省略掉
+	
+	ALTER TABLE weblogs ADD COLUMS (user_id string);
+	
+	通过这种方式，无法在已有字段的开始或者中间增加字段
+	
+	
+104.（几乎）总是使用压缩
+
+	压缩可以使磁盘上存储的数量变小，这样可以降低I/O来提高查询执行速度
+	
+	查是压缩和解压都会消耗CPU资源。MapReduce任务往往是I/O密集型的，因此CPU开销通常不是问题
+	
+	
+十、调优
+
+105.EXPLAIN
+
+	STAGE DEPENDENCIENS:
+	
+		Stage-1 is a root stage
+		
+		Stage-0 is a root stage
+		
+	STAGE PLANS:
+	
+		Stage: Stage-1
+			
+			Map Reduces
+			
+			...
+			...
+			
+		Stage: Stage-0
+		
+			Fetch Operator
+			
+				limit: -1
+			
+			
+
+	会打印出抽象语法树。它表明Hive是如何将查询解析成token（符号）和literal（字面值）
+	
+	尽管我们的查询会将其输出写入到控制台，但Hive实际上会先输出写入到 一个临时文件中
+	
+	一个Hive任务会包含有一个或多个stage（阶段），不同stage间会存在着依赖关系
+	
+	一个stage可以是一个MapReduce任务（Map Reduce Operator，对应select语句），也可以是一个抽样阶段（Move Operator，对应Insesrt语句），
+	
+	也可以是一个合并阶段，还可以是一个limit阶段（Fetch Operator）
+	
+	TableScan以这个表作为输入，然后会产生一个只有字段number的输出
+	
+	Stage-0 输出到控制台
+	
+	
+106.EXPLAIN EXTENDED
+
+
+107.限制调整
+
+	limit 尽量避免执行整个查询语句
+	
+				set hive.limit.optimize.enable=true;
+				
+				set hive.limit.row.max.size=10000;
+				
+				set hive.limit.optimize.limit.file=10;
+				
+				
+108.JOIN优化
+
+	如果所有表中有一个表足够小，是可以完全载入到内存的，那么这时Hive可以执行一个map-side JOIN，这样可以减少reduce过程，有时甚至可以减少某些map task任务
+	
+	
+109.本地模式
+
+	对于小数据集，执行时间可以明显缩短
+	
+	手动：
+	
+				set oldjobtracks=${hiveconf:mapred.job.tracker};
+				
+				set mapred.job.tracker=local;
+				
+				set mapred.tmp.dir=/home/edward/tmp;
+				
+				select * from people where firstname=bob;
+				
+				...
+				
+				set mapred.job.tracker=${oldjobtracker};
+				
+	自动：
+	
+				set hive.exec.mode.local.auto=true;
+				
+				
+110.并行执行
+
+	默认情况下，Hive一次只会执行一个阶段
+	
+	设置参数hive.exec.parallel值为true，就可以开启并发执行
+	
+	
+111.严格模式
+
+	设置属性hive.mapred.mode值为strict可以禁止3种类型的查询
+	
+	a) 对于分区表，除非where语句中含有分区字段过滤条件来限制数据范围，否则不允许执行
+	
+	b) 对于使用了order by 语句的查询，要求必须使用limit语句
+	
+	c) 也就是最后一种情况，就是限制笛卡尔积的查询
+	
+	
+112.调整mapper和reducer个数
+
+	不做聚合不会产生reducer
+	
+	当执行的Hive查询具有reduce过程时，CLI控制台会打印出调优后的reducer个数。没有reduce过程，无需优化，但也会打印
+	
+	Hive是按照输入的数据量大小来确定reducer个数的。我们可以通过dfs -count命令来计算输入量大小
+	
+	属性hive.exec.reducers.bytes.per.reducer的默认值是1GB
+	
+				set hive.exec.reducers.bytes.per.reducer=1000000000;
+				
+				（expects Long type value）
+	
+	默认值通常情况下是比较合适的。不过有些情况下查询的map阶段会产生比实际输入数据量要多得多的数据（如表生成函数）。
+	
+	如果map阶段产生的数据量非常多，那根据输入的数据量大小来确的reducer个数就显得有些少了
+	
+	可以通过设置属性mapred.reduce.tasks的值为不同的值来确定是使用较多还是较少的reducer来缩短执行时间
+	
+	属性hive.exec.reducers.max显得非常重要。一个Hadoop集群可以提供的map和reduce资源个数（也称为“插槽”），是固定的。这个属性值大小的一个建议的计算公式如下：
+	
+				（集群总Reduce槽位个数*1.5）/（执行中的查询的平均个数）
+				
+				1.5倍数是一个经验系数，用于防止未充分利用集群的情况
+				
+				
+113.JVM复用
+
+	Hadoop的默认配置通常是使用派生JVM来执行map和reduce任务的。这时JVM的启动过程可能会造成相当大的开销，尤其是执行的job包含有成百上千个task任务的情况。
+	
+	JVM复用可以使得JVM实例在同一个job中重新使用N次。N的值可以在Hadoop的mapred-site.xml文件中进行设置：
+	
+				mapred.job.reuse.jvm..num.tasks
+				
+				10
+				
+	这个功能的一个缺点是，开启JVM重用将会一直占用使用的task插槽，以便进行复用，直到任务完成后才能释放。
+	
+	如果某个“不平衡的”的job中有某几个reduce task执行的时间要比其他task消耗的时间多得多的话，那么保留的插槽会一直空闲着却无法被其他的job使用，直到所有的task都结束了才会释放
+	
+	
+114.动态分区调整
+
+	如果分区的个数非常的多，那么就会在系统中产生大量的输出控制流
+	
+	开启严格模式的时候，必须保证至少一个分区是静态的
+	
+				set hive.exec.dynamic.partition.mode=strict;
+				
+	限制查询可以创建的最大动态分区个数
+	
+				set hive.exec.max.dynamic.partitions=1000;
+				
+				set hive.exec.max.dynamic.partitions.pernode=100;
+				
+	控制DataNode上一次可以打开的文件个数。这个属性默认值是256。更改这个属性值需要重启DataNode才能够生效
+	
+				dfs.datanode.max.xcievers
+				
+				8192
+				
+				
+115.推测执行
+
+	推测执行是Hadoop中的一个功能，其可以触发执行一些重复的任务（task）。尽管这样会因为对重复的数据进行计算而导致消耗更多的计算资源，不过这个功能的目标 是通过加快获取单 个task的结果以及进行侦测将执行慢 的TaskTracker加入到黑名单的方式 来提高整体的任务执行效率
+	
+				mapred.map.tasks.speculative.execution
+				
+				
+				true
+	
+				mapred.reduce.tasks.speculative.execution
+				
+				true
+	
+	Hive本身也提供了配置项来控制reduce-side的推测执行
+	
+				set hive.mapred.reduce.tasks.speculative.execution=true;
+	
+	
+116.单个MapReduce中多个Group by
+
+	set hive.multigroup.singlemr=false;
+	
+	
+十一、其他文件格式和压缩方法
+
+117.Hive不会强制要求数据转换成特定的格式才能使用。
+
+	Hive利用Hadoop的InputFormat API来从不同的数据源读取数据
+	
+	文件格式：
+	
+				a) 文件是怎样分隔成行（记录）的。当用户没有使用默认的文本文件格式时，用户需要告诉Hive使用的InputFormat和OutputFormat是什么
+				
+				b) 记录是如何分割成字段（或列）的。Hive使用Serde（也就是序列化/反序列化的简写）作为对输入记录（反序列化）进行分割以及写记录（序列化）的“模板”
+				
+	
+118.压缩通常都会节约可观的磁盘空间，例如，基于文本的文件可以压缩40%甚至更高比例。压缩同样可以增加吞吐量和性能
+
+	Hadoop的job通常是I/O密集型而不是CPU密集型的
+	
+	对于压缩密集型的job最发使用压缩，特别是有额外的CPU资源或磁盘存储空间比较稀缺的情况
+	
+	+----	BZip2			：压缩率最高，但同时需要消耗最多的CPU开销
+	|
+	+----	GZip			：压缩率和压缩/解压速度上的下一个选择										文件不可划分
+	|
+	+----	LZO				：压缩率小，但压缩/解压速度要快
+	|
+	+----	Snappy		：压缩率小，但压缩/解压速度要快													文件不可划分
+	
+	BZip2和LZO提供了块（BLOCK）级别的压缩，也就是每个块中都含有完整的记录信息
+	
+	虽然GZip和Snappy压缩的文件不可划分，但是并不能因此而排除它们
+	
+	
+119.中间压缩和最终输出结果压缩
+
+	+----	中间压缩
+	|
+	|						hive.exec.compress.intermediate			（其他Hadoop job是：mapred.compress.map.output）
+	|
+	|						编/解码器
+	|		
+	|									默认是DefaultCodec，SnappyCodec是一个比较好的中间文件压缩编/解码器
+	|
+	|									mapred.map.output.compression.codec
+	|									org.apache.hadoop.io.compress.SnappyCodec
+	|
+	|
+	+----	最终输出结果压缩
+	
+							hive.exec.compress.output						（其他Hadoop job是：mapred.output.compress）
+							
+							对于输出文件，使用GZip进行压缩是个不错的主意
+							
+										mapred.output.compression.codec
+										org.apache.hadoop.io.compress.GzipCodec
+										
+							默认的压缩后缀名是.deflate
+										
+										
+220.如果想在Hive中使用sequence file存储茖式，那么需要在CREATE TABLE语句中通过STORED AS SEQUENCEFILE语句进行指定
+
+	Sequence file提供了3种压缩方式：NONE、RECODE、BLOCK，默认是RECODE级别（也就是记录级别）。不过通常来说，BLOCK级别（也就是块级别）压缩性能最好而且可以分割
+	
+	mapred.output.compression.type
+	BLOCK
+	
+221.存档分区
+
+	Hadoop中有一种存储格式名为HAR，也就是Hadoop Archive（Hadoop归档文件）的简写
+	
+	如果某个特定的分区下保存的文件有成千上万的话，那么就需要HDFS中的NameNode消耗非常大的代价来管理这些文件。
+	
+	通过将分区下的文件归档成一个巨大的，但是同时可以被Hive访问的文件，可以减轻NameNode的压力。
+	
+	不过其缺点是，HAR文件查询效率不高；同时，HAR文件并非是压缩的，因此也不会节纺存储空间
+	
+	
+	存档：
+	
+				set hive.archive.enabled=true;
+	
+				ALTER TABLE hive_text ARCHIVE PARTITION(folder='docs');
+	
+	提取：
+	
+				ALTER TABLE hive_text ARCHIVE PARTITION(folder='docs');
+	
+	
+	
+	
+
+
+
+	

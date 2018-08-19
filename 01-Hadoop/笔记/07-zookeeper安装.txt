@@ -1,0 +1,96 @@
+1.上传zk安装包
+	rz
+	
+2.解压
+	tar -zxvf zookeeper-3.4.5.tar.gz  -C ../
+
+3.配置（先在一台节点上配置）
+	3.1添加一个zoo.cfg配置文件
+	$ZOOKEEPER/conf
+	mv zoo_sample.cfg zoo.cfg
+	
+	3.2修改配置文件（zoo.cfg）
+		修改：
+		dataDir=/home/hadoop/Development/zookeeper-3.4.5/data
+		添加：
+		server.1=programmer:2888:3888
+		server.2=programmer_01:2888:3888
+		server.3=programmer_02:2888:3888
+	
+	3.3在（dataDir=/home/hadoop/Development/zookeeper-3.4.5/data）创建一个myid文件，里面内容是server.N中的N（server.2里面内容为2）
+		echo "1" > myid
+	
+	3.4将配置好的zk拷贝到其他节点
+		scp -r /home/hadoop/Development/zookeeper-3.4.5/ programmer_01:/home/hadoop/Development/
+		scp -r /home/hadoop/Development/zookeeper-3.4.5/ programmer_02:/home/hadoop/Development/
+	
+	3.5注意：在其他节点上一定要修改myid的内容
+		在itcast06应该讲myid的内容改为2 （echo "2" > myid）
+		在itcast07应该讲myid的内容改为3 （echo "3" > myid）
+		
+4.启动集群
+	分别启动zk
+		./zkServer.sh start
+	
+5.查看哪一台是集群管理
+  ./zkServer.sh status
+  
+6.进行命令行
+  ./zkCli.sh
+  
+7.命令
+  help
+  ls /
+  create /tmp info
+  get /tmp
+  set /tmp message
+
+
+
+
+
+
+zookeeper的最主要功能：
+1、保管客户端提交的数据（极其少量的数据）	
+每一份数据在zookeeper叫做一个znode
+znode之间形成一种树状结构（类似于文件树）
+比如：
+/lock(znode名) host001(znode中存的数据)
+
+/lock/last_acc(znode名)    host008(znode中存的数据)
+
+
+
+
+
+
+
+zookeeper的默认配置文件为zookeeper/conf/zoo_sample.cfg，需要将其修改为zoo.cfg。其中各配置项的含义，解释如下：
+
+1.tickTime：CS通信心跳时间
+Zookeeper 服务器之间或客户端与服务器之间维持心跳的时间间隔，也就是每个 tickTime 时间就会发送一个心跳。tickTime以毫秒为单位。
+tickTime=2000  
+
+2.initLimit：LF初始通信时限
+集群中的follower服务器(F)与leader服务器(L)之间初始连接时能容忍的最多心跳数（tickTime的数量）。
+initLimit=5  
+
+3.syncLimit：LF同步通信时限
+集群中的follower服务器与leader服务器之间请求和应答之间能容忍的最多心跳数（tickTime的数量）。
+syncLimit=2  
+ 
+4.dataDir：数据文件目录
+Zookeeper保存数据的目录，默认情况下，Zookeeper将写数据的日志文件也保存在这个目录里。
+dataDir=/home/michael/opt/zookeeper/data  
+
+5.clientPort：客户端连接端口
+客户端连接 Zookeeper 服务器的端口，Zookeeper 会监听这个端口，接受客户端的访问请求。
+clientPort=2181 
+
+6.服务器名称与地址：集群信息（服务器编号，服务器地址，LF通信端口，选举端口）
+这个配置项的书写格式比较特殊，规则如下：
+server.N=YYY:A:B 
+
+server.1=itcast05:2888:3888
+server.2=itcast06:2888:3888
+server.3=itcast07:2888:3888
