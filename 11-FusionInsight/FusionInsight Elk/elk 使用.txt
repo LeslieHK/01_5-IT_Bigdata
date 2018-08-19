@@ -1,0 +1,252 @@
+1、启动Elk
+
+  登录10.170.32.218 omm/Bigdata123@
+
+  启动:（BIGDATA_HOME：/app/software/huawei/Bigdata）
+    执行source ${BIGDATA_HOME}/mppdb/.mppdbgs_profile
+
+2、连接（postgres是默认数据库，才能创建其他的数据库）
+
+  本地连接：
+    gsql -d postgres -p 25108
+
+  远程连接：（以omm用户登录默认库postgres）
+    cd /was/adt/client/Elk/bin
+    gsql -d postgres -h 10.170.32.218 -U omm -p 25108 -W Gaussdba@Mpp
+
+3、创建用户：
+     CREATE ROLE hds WITH LOGIN PASSWORD "Hds@1234";
+  
+  查看用户：
+    \du
+
+4、创建数据库
+  
+  语法：
+    CREATE DATABASE dbname OWNER role;
+    如：CREATE DATABASE archive_db OWNER hds;
+
+  退出后重新连接新的数据库：
+    \c archive_db
+   
+  查看数据库
+    \l
+  退出
+    \q
+
+
+
+
+5、创建HDFS SERVER命令如下:
+
+  以omm用户登录默认库postgres
+    gsql -d postgres -h 10.170.32.218 -U omm -p 25108 -W Gaussdba@Mpp
+
+  赋予hds系统管理员权限
+    ALTER ROLE hds SYSADMIN;/ALTER ROLE hds NOSYSADMIN;
+
+  hds用户登录postgres
+    gsql -d postgres -h 10.170.32.218 -U hds -p 25108 -W Hds@123
+
+  建立外部服务器
+    CREATE SERVER archive_server FOREIGN DATA WRAPPER HDFS_FDW 
+    OPTIONS(address'10.170.32.219:25000,10.170.32.220:25000',hdfscfgpath '/app/software/huawei/Bigdata/mppdb/conf');
+
+    10.170.32.219:25000,10.170.32.220:25000为HDFS NameNode的IP和dfs.namenode.http.port
+    /app/software/huawei/Bigdata/mppdb/conf为elk配置文件存放路径
+
+    其中: address为HDFS NameNode主备IP; hdfscfgpath为HDFS集群配置文件的路径。
+
+  查看服务器建立情况
+    \des
+
+  以omm用户登录默认库postgres
+    gsql -d postgres -h 10.170.32.218 -U omm -p 25108 -W Gaussdba@Mpp
+
+  收回hds系统管理员权限
+    ALTER ROLE hds NOSYSADMIN;
+
+6、其他操作
+  查看服务器建立情况
+    \des
+  删除
+    DROP SERVER server_name [CASCADE | RESTRICT];
+
+7、schema管理
+  
+  一个数据库可以包含一个或多个已命名的schema，schema又包含表及其他数据库对象，包括数据类型、函数、操作符等。同一对象名可以在不同的schema中使用而不会引起冲突。例如，schema1和schema2都可以包含一个名为mytable的表。
+
+  建立schema：
+    CREATE SCHEMA yourschema AUTHORIZATION omm;
+    如：create schema ods;
+
+  查看schema：
+    \dn
+
+
+
+
+
+
+
+8、hive数据转orc（外表建失败的原因）
+  set hive.exec.orc.write.format=0.11;
+  create table test_foreign stored as orc as select * from test;
+
+9、数据类型匹配关系
+
+类型名称		Elk HDFS外表支持的类型			数据导入HDFS时，HIVE建表类型
+
+2字节整数		SMALLINT				SMALLINT
+4字节整数		INTEGER					INT
+8字节整数		BIGINT					BIGINT
+单精度浮点数		FLOAT4 (REAL)				FLOAT
+双精度浮点型		FLOAT8(DOUBLE PRECISION)		DOUBLE
+科学数据类型		DECIMAL[p (,s)] 最大支持38位精度	DECIMAL最大支持38位（HIVE 0.11）
+日期类型		DATE					DATE
+时间类型		TIMESTAMP				TIMESTAMP
+Boolean类型		BOOLEAN					BOOLEAN
+Char类型		CHAR(n)					CHAR (n)
+VarChar类型		VARCHAR(n)				VARCHAR (n)
+字符串(文本大对象)	TEXT(CLOB)				STRING
+
+
+10、创建Elk 外表,创表语句如下:
+
+  CREATE FOREIGN TABLE test_foreign
+
+  (
+
+    hds_date	varchar(50),
+
+    name	varchar(45),
+
+    id		varchar(45),
+
+    note	varchar(45),
+
+    part_mode	TEXT,
+
+    part_sdate	TEXT,
+
+    part_edate	TEXT,
+
+    part_org	TEXT
+
+  )
+
+  SERVER archive_server OPTIONS(format 'orc',foldername '/user/hive/warehouse/fsd.db/t_test')
+
+  distribute by roundrobin;
+
+  其中: format为Elk HDFS外表可读的文件格式；foldername为Elk HDFS外表可读文件的HDFS路径。
+
+   说明： 
+  Elk HDFS外表是readonly表，数据由其他组件或Elk HDFS表生成。该类型表仅做查询或读取HDFS上ORC数据文件用于导入Elk HDFS表使用。
+
+9、建外表重点：
+
+  Elk SQL on hadoop特性中HDFS外表定义分区列数目应不大于HIVE表中定义的分区列数量。
+  同时定义顺序必须和在HIVE表中分区列定义顺序保持一致。
+
+  若数据量相对较小，建议创建为REPLICATION分布方式的HDFS外表。若数据量较大，建议创建为ROUNDROBIN分布方式的HDFS外表。
+
+
+10、分区表
+  CREATE FOREIGN TABLE test_foreign
+
+  (
+
+    hds_date	varchar(50),
+
+    name	varchar(45),
+
+    id		varchar(45),
+
+    note	varchar(45),
+
+    part_mode	TEXT,
+
+    part_sdate	TEXT,
+
+    part_edate	TEXT,
+
+    part_org	TEXT
+
+  )
+
+  SERVER archive_server OPTIONS(format 'orc',foldername '/user/hive/warehouse/fsd.db/t_test')
+
+  distribute by roundrobin
+
+  PARTITION BY (f_date) AUTOMAPPED;
+
+  通过关键字partition指定表part按照列f_date进行分区，关键字automapped为必选项。
+
+
+11、操作外表
+
+查表数据。
+select * from test_foreign;
+
+查看建立的外表。
+postgres=# SELECT * FROM pg_foreign_table WHERE ftrelid='part'::regclass;
+16513 |    16509 | f           | {format=orc,foldername=/user/hive/warehouse/partition.db/part_4}
+
+修改、删除外表。
+postgres=# ALTER FOREIGN TABLE region ALTER r_name TYPE TEXT;
+ALTER FOREIGN TABLE
+
+postgres=# ALTER FOREIGN TABLE region ALTER r_name SET NOT NULL;
+ALTER FOREIGN TABLE
+
+postgres=# DROP FOREIGN TABLE region;
+DROP FOREIGN TABLE
+
+
+12、创建表空间
+
+  以omm用户创建表空间：
+    CREATE TABLESPACE hdfs_ts0004 LOCATION '/mpp/bigdata/hdfs_ts_0004' 
+    WITH(filesystem=hdfs, cfgpath='/opt/config', storepath='/temp0004/distribute');
+  
+    说明：
+      假设“hdfs_ts0004”为新创建的HDFS表空间，
+      “/mpp/bigdata/hdfs_ts_0004”是omm用户拥有读写权限的空目录，
+      “/opt/config”为HDFS集群配置文件的路径，
+      “/temp0004/distribute”为HDFS上数据存储的目录。
+  
+  授权：
+    GRANT CREATE ON TABLESPACE hdfs_ts0004 TO jack;
+
+13、建内表
+
+  CREATE TABLE test_foreign
+
+  (
+
+    hds_date	varchar(50),
+
+    name	varchar(45),
+
+    id		varchar(45),
+
+    note	varchar(45),
+
+    part_mode	TEXT,
+
+    part_sdate	TEXT,
+
+    part_edate	TEXT,
+
+    part_org	TEXT
+
+  )
+  
+  TABLESPACE hdfs_ts0004
+
+  DISTRIBUTE BY hash(hds_date);
+
+14、导入数据
+
+  INSERT INTO [目标表名] SELECT * FROM [foreign table 表名];

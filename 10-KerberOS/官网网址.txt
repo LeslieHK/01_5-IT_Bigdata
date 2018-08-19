@@ -1,0 +1,5 @@
+¹ÙÍø£º
+http://web.mit.edu/kerberos/
+
+ÎÄµµ£º
+http://web.mit.edu/kerberos/krb5-latest/doc/

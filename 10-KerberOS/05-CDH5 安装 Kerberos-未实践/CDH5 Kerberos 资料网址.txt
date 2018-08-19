@@ -1,0 +1,9 @@
+CDH 的Kerberos认证配置
+http://blog.csdn.net/wulantian/article/details/42173095
+http://www.aboutyun.com/forum.php?mod=viewthread&tid=22835
+
+使用CDH Manager 安装Kerberos服务——之初始化失败 
+http://blog.51cto.com/bananalighter/1551473
+
+
+

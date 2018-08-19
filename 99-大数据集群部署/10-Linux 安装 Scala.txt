@@ -1,0 +1,48 @@
+Linux安装Scala步骤
+
+
+一、下载Scala安装包
+
+		从scala官方网站地址：http://www.scala-lang.org/download/下载scala二进制包，以2.11.7版本为例
+
+二、安装
+
+ 1、将下载的二进制包上传到/tmp/pkg目录，解压缩文件包
+
+		su
+		
+		unzip scala-2.11.7.zip 
+
+		mv scala-2.11.7 /opt/scala
+
+ 2、设置环境变量
+
+		vi /etc/profile
+		
+		// 打开后，在文档最下方添加如下配置：
+
+		export PATH=/opt/scala/bin:$PATH
+
+		:wq!保存退出，执行如下命令，使更改生效
+
+		source /etc/profile
+
+ 3、检查scala是否安装成功
+
+		在终端上执行scala命令
+
+		scala
+
+		如果看到scala版本及相关信息，即安装成功！
+
+		Welcome to Scala version 2.11.7 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_151).
+		Type in expressions to have them evaluated.
+		Type :help for more information.
+
+		或者执行如下scala命令
+
+		scala -version
+
+		如果看到scala版本信息，即安装成功！
+
+		Scala code runner version 2.11.7 -- Copyright 2002-2013, LAMP/EPFL

@@ -1,0 +1,26 @@
+kpasswd
+
+kinit
+
+kinit admin/admin@MASTER.COM
+
+kinit -l 3h
+
+klist
+
+kdestroy
+
+
+
+
+
+kdb5_util create -r MASTER.COM -s
+
+kadmin.local
+
+	addprinc admin/admin@ATHENA.MIT.EDU
+	
+krb5kdc
+
+kadmind
+

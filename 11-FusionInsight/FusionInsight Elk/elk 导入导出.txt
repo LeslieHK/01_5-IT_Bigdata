@@ -1,0 +1,149 @@
+1、使用TPCDS工具生成1T文本数据
+   (1)生成数据到HDFS
+   cd tpcds/bin/
+   sh gen-data.sh -s 1024 -l /tpcds
+   (2)使用1T文本数据创建hive外表
+   sh create-text-table.sh -s 1024 -t tpcds -l /tpcds
+
+2、生成orc格式数据
+	set hive.exec.orc.write.format=0.11;
+	create table tpc_ds.call_center             stored as orc as select * from tpcds.call_center           ;
+	create table tpc_ds.catalog_page            stored as orc as select * from tpcds.catalog_page          ;
+	create table tpc_ds.catalog_returns         stored as orc as select * from tpcds.catalog_returns       ;
+  create table tpc_ds.catalog_sales           stored as orc as select * from tpcds.catalog_sales         ;
+  create table tpc_ds.customer                stored as orc as select * from tpcds.customer              ;
+  create table tpc_ds.customer_address        stored as orc as select * from tpcds.customer_address      ;
+  create table tpc_ds.customer_demographics   stored as orc as select * from tpcds.customer_demographics ;
+  create table tpc_ds.date_dim                stored as orc as select * from tpcds.date_dim              ;
+  create table tpc_ds.household_demographics  stored as orc as select * from tpcds.household_demographics;
+  create table tpc_ds.income_band             stored as orc as select * from tpcds.income_band           ;
+  create table tpc_ds.item                    stored as orc as select * from tpcds.item                  ;
+  create table tpc_ds.promotion               stored as orc as select * from tpcds.promotion             ;
+  create table tpc_ds.reason                  stored as orc as select * from tpcds.reason                ;
+  create table tpc_ds.ship_mode               stored as orc as select * from tpcds.ship_mode             ;
+  create table tpc_ds.store                   stored as orc as select * from tpcds.store                 ;
+  create table tpc_ds.store_returns           stored as orc as select * from tpcds.store_returns         ;
+  create table tpc_ds.store_sales             stored as orc as select * from tpcds.store_sales           ;
+  create table tpc_ds.time_dim                stored as orc as select * from tpcds.time_dim              ;
+  create table tpc_ds.warehouse               stored as orc as select * from tpcds.warehouse             ;
+  create table tpc_ds.web_page                stored as orc as select * from tpcds.web_page              ;
+  create table tpc_ds.web_returns             stored as orc as select * from tpcds.web_returns           ;
+  create table tpc_ds.web_sales               stored as orc as select * from tpcds.web_sales             ;
+  create table tpc_ds.web_site                stored as orc as select * from tpcds.web_site              ;
+
+3、在MPP数据库中创建HDFS外表
+  (1)创建HDFS SERVER
+  create server hdfs_server foreign data wrapper hdfs_fdw options(address '14.16.15.1:25000,14.16.15.3:25000',hdfscfgpath '/gbase/huawei/BigData/mppdb/conf');
+  (2)HDFS外表
+  加载环境变量：
+  su - omm
+  source /gbase/huawei/BigData/mppdb/.mppdbgs_profile
+  gsql -p 25108 -d poc -r
+  创建HDFS外表：
+    create foreign table catalog_returns_foreign(
+      cr_returned_date_sk       int,
+      cr_returned_time_sk       int,
+      cr_item_sk                int,
+      cr_refunded_customer_sk   int,
+      cr_refunded_cdemo_sk      int,
+      cr_refunded_hdemo_sk      int,
+      cr_refunded_addr_sk       int,
+      cr_returning_customer_sk  int,
+      cr_returning_cdemo_sk     int,
+      cr_returning_hdemo_sk     int,
+      cr_returning_addr_sk      int,
+      cr_call_center_sk         int,
+      cr_catalog_page_sk        int,
+      cr_ship_mode_sk           int,
+      cr_warehouse_sk           int,
+      cr_reason_sk              int,
+      cr_order_number           int,
+      cr_return_quantity        int,
+      cr_return_amount          decimal,
+      cr_return_tax             decimal,
+      cr_return_amt_inc_tax     decimal,
+      cr_fee                    decimal,
+      cr_return_ship_cost       decimal,
+      cr_refunded_cash          decimal,
+      cr_reversed_charge        decimal,
+      cr_store_credit           decimal,
+      cr_net_loss               decimal
+  ) SERVER hdfs_server OPTIONS(format 'orc',filenames '/user/hive/warehouse/tpc_ds.db/catalog_returns/catalog_returns_orc')
+  distribute by roundrobin;
+ 
+4、
+
+
+  计提数据载入：
+  (1)载入CSV文件
+CREATE external TABLE M_DEP_DM_ACCRUAL_INTEREST_MX_INFO(
+CONTRACT_INT     VARCHAR(50)   ,
+SETTLEMENT_TYPE  VARCHAR(9)    ,
+CLOS_PER         VARCHAR(21)   ,
+CLOS_NRADD       VARCHAR(9)    ,
+BALOBJCATG       VARCHAR(12)   ,
+COND_TYPE        VARCHAR(18)   ,
+NUMB             VARCHAR(12)   ,
+SIM_COUNTER      VARCHAR(9)    ,
+DAYS_NUMB        INT           ,
+SECONDS_NUMB     VARCHAR(10)   ,
+RATE             DECIMAL(22,10),
+CURR_CD          VARCHAR(5)    ,
+AMOUNT           DECIMAL(31,9) ,
+CALC_AMOUNT      DECIMAL(31,9) ,
+EVAL_FROM        VARCHAR(8)    ,
+BALANCE          DECIMAL(31,9) ,
+AMOUNT_CC        DECIMAL(31,9) ,
+CALC_AMOUNT_CC   DECIMAL(31,9) ,
+C_ACURR_CD       VARCHAR(5)    ,
+SETTLEMENT_REV   VARCHAR(3)    ,
+REV_POST_DATE    VARCHAR(8)    ,
+POST_TMSTP       VARCHAR(30)   ,
+CLOS_TIMESTAMP   VARCHAR(30)   ,
+BUSS_DT          VARCHAR(8)   ,
+DATA_DT          VARCHAR(8)   ,
+ADD_DT           VARCHAR(8)   )
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde' with serdeproperties("separatorChar"=",","quoteChar"="\"","escapeChar"="\\") stored as textfile location '/tmp/poc/jt';
+  (2)生成ORC文件
+set hive.exec.orc.write.format=0.11;
+create table tpc_ds.M_DEP_DM_ACCRUAL_INTEREST_MX_INFO             stored as orc as select * from tpcds.M_DEP_DM_ACCRUAL_INTEREST_MX_INFO           ;
+  (3)创建MPP数据库HDFS外表
+CREATE foreign TABLE M_DEP_DM_ACCRUAL_INTEREST_MX_INFO_FOREIGN(
+CONTRACT_INT     VARCHAR(50)   ,
+SETTLEMENT_TYPE  VARCHAR(9)    ,
+CLOS_PER         VARCHAR(21)   ,
+CLOS_NRADD       VARCHAR(9)    ,
+BALOBJCATG       VARCHAR(12)   ,
+COND_TYPE        VARCHAR(18)   ,
+NUMB             VARCHAR(12)   ,
+SIM_COUNTER      VARCHAR(9)    ,
+DAYS_NUMB        INTEGER       ,
+SECONDS_NUMB     VARCHAR(10)   ,
+RATE             DECIMAL(22,10),
+CURR_CD          VARCHAR(5)    ,
+AMOUNT           DECIMAL(31,9) ,
+CALC_AMOUNT      DECIMAL(31,9) ,
+EVAL_FROM        VARCHAR(8)    ,
+BALANCE          DECIMAL(31,9) ,
+AMOUNT_CC        DECIMAL(31,9) ,
+CALC_AMOUNT_CC   DECIMAL(31,9) ,
+C_ACURR_CD       VARCHAR(5)    ,
+SETTLEMENT_REV   VARCHAR(3)    ,
+REV_POST_DATE    VARCHAR(8)    ,
+POST_TMSTP       VARCHAR(30)   ,
+CLOS_TIMESTAMP   VARCHAR(30)   ,
+BUSS_DT          VARCHAR(8)   ,
+DATA_DT          VARCHAR(8)   ,
+ADD_DT           VARCHAR(8)   ) SERVER hdfs_server OPTIONS(format 'orc',foldername '/user/hive/warehouse/tpc_ds.db/m_dep_dm_accrual_interest_mx_info')
+  distribute by roundrobin;
+  
+  
+数据稽查：
+   create external table test(ca string,cb string ,cc string)
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde' with serdeproperties("separatorChar"=",","quoteChar"="\"","escapeChar"="\\") stored as textfile location '/tmp/poc/test/';
+
+hadoop dfs -put test.del /tmp/poc/test/
+"a","b","c"
+"a",\"b\","c"
+
+select * from test;

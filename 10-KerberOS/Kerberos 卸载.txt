@@ -1,0 +1,28 @@
+1、删除用户和主机：
+kadmin.local
+kadmin.local: delprinc admin/admin@HADOOP.COM
+kadmin.local: delprinc host/kerberos.hadoop.com@HADOOP.COM
+kadmin.local: delprinc host/kerberos2.hadoop.com@HADOOP.COM
+
+2、删除keytab文件
+rm -f /etc/krb5.keytab
+
+3、删除数据库文件
+rm -rf /var/kerberos/krb5kdc/Principal*
+rm -rf /var/kerberos/krb5kdc/*dump*
+
+或
+
+kdb5_util destroy -r HADOOP.COM
+
+4、关闭服务
+service krb5kdc stop
+service kadmin stop
+
+5、卸载包
+
+6、删除配置文件
+
+rm -f /etc/krb5.conf
+cd /var/kerberos/krb5kdc
+rm -f kdc.conf Kadmin.acl .k5.HADOOP.COM
